@@ -41,15 +41,22 @@ window.onbeforeunload = function (e) {
 	return undefined;
 };
 
-
+chrome.runtime.onMessage.addListener(function (message, sender, callback) {
+	if (message.text == 'start') {
+		farming = true;
+		loop();
+	} else if (message.text == 'stop') {
+		farming = false;
+	}
+});
 
 window.onload = function() {
 	chrome.extension.sendMessage({text:"getData"},function(response){
 		attacking = response.attacking;
 		farming = response.farming;
-		if (!attacking) {
-			window.setTimeout(confirmPopup,1000);
-		} else {
+		if (farming && !attacking) {
+			loop();
+		} else if (attacking) {
 			setBackgroundData(false, true);
 			window.setTimeout(sendAttack, 1000);
 		}
@@ -62,19 +69,8 @@ function sendAttack() {
 	document.getElementById('troop_confirm_go').click();
 }
 
-function confirmPopup() {
-	if (!farming) {
-		farming = window.confirm('Farm time!?');
-		if (farming) {
-			loop();
-		}
-	} else {
-		loop();
-	}
-}
-
 function loop() {
-	if (!attacking) {
+	if (!attacking && farming) {
 		window.setTimeout(loop,1000);
 		verifyAndFarm();
 	}

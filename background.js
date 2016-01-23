@@ -14,3 +14,15 @@ chrome.extension.onMessage.addListener(function(message,sender,sendResponse){
 		sendResponse(null);
 	}
 });
+
+chrome.pageAction.onClicked.addListener(function(tab){
+	if (isFarming) {
+		isFarming = false;
+		chrome.pageAction.setTitle({tabId:tab.id, title:'Enable Tribal Wars Farmer'});
+		chrome.tabs.sendMessage(tab.id, {text:"stop"}, function() {});
+	} else {
+		isFarming = true;
+		chrome.pageAction.setTitle({tabId:tab.id, title:'Disable Tribal Wars Farmer'});
+		chrome.tabs.sendMessage(tab.id, {text:"start"}, function() {});
+	}
+});

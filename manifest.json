@@ -1,10 +1,10 @@
 {
   "manifest_version": 2,
   "name": "Tribal Wars Farmer",
-  "version": "0.1",
+  "version": "1.0",
 	"page_action": {
     "default_icon": "farm_assistent.png",
-		"default_title": "Tribal Wars Farmer"
+		"default_title": "Enable Tribal Wars Farmer"
   },
   "content_scripts": [
     {
