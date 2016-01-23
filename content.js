@@ -34,6 +34,17 @@ var safeFarm = [
 var attacking = false;
 var farming = false;
 
+window.addEventListener("beforeunload", function (e) {
+	if (farming && !attacking) {
+  	var confirmationMessage = 'This is your farm tab, are you sure you want to leave?';
+
+  	(e || window.event).returnValue = confirmationMessage; //Gecko + IE
+  	return confirmationMessage; //Gecko + Webkit, Safari, Chrome etc.
+	} else {
+		return null;
+	}
+});
+
 chrome.extension.sendMessage({text:"getData"},function(response){
   attacking = response.attacking;
   farming = response.farming;
@@ -74,9 +85,9 @@ function verifyAndFarm() {
 		var lc_input = document.getElementById('unit_input_light');
 		lc_input.value = 5;
 		var coord_input = document.querySelector('#place_target > input');
-		var index = parseInt(Math.random() * safeFarm.length);
-		coord_input.value = safeFarm[index];
-		console.log("Attacking: " + safeFarm[index]);
+		var selectedFarm = selectFarm();
+		coord_input.value = selectedFarm;
+		console.log("Attacking: " + selectedFarm);
 
 		setBackgroundData(true, true);
 
@@ -90,14 +101,25 @@ function setBackgroundData(attackValue, farmingValue) {
 	});
 }
 
-window.addEventListener("beforeunload", function (e) {
-	if (farming && !attacking) {
-  	var confirmationMessage = 'This is your farm tab, are you sure you want to leave?';
-
-  	(e || window.event).returnValue = confirmationMessage; //Gecko + IE
-  	return confirmationMessage; //Gecko + Webkit, Safari, Chrome etc.
-	} else {
-		return null;
+function selectFarm() {
+	var index = parseInt(Math.random() * safeFarm.length);
+	var currentAttack;
+	var currentAttackString;
+	var tempIndex = 2;
+	//Check for current attack
+	while (true) {
+		currentAttack = document.querySelector("#content_value > table:nth-child(10) > tbody > tr:nth-child(" + tempIndex + ") > td:nth-child(1) > span.quickedit-out > span > a > span");
+		if (currentAttack != undefined) {
+			currentAttackString = currentAttack.innerHTML;
+			if (currentAttackString.indexOf(safeFarm[index]) > -1) {
+				return selectFarm();
+			}
+			tempIndex++;
+		} else {
+			break;
+		}
 	}
-});
+	
+	return safeFarm[index];
+}
 
