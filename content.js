@@ -37,24 +37,26 @@ var farming = false;
 window.addEventListener("beforeunload", function (e) {
 	if (farming && !attacking) {
   	var confirmationMessage = 'This is your farm tab, are you sure you want to leave?';
-
-  	(e || window.event).returnValue = confirmationMessage; //Gecko + IE
   	return confirmationMessage; //Gecko + Webkit, Safari, Chrome etc.
 	} else {
 		return null;
 	}
 });
 
-chrome.extension.sendMessage({text:"getData"},function(response){
-  attacking = response.attacking;
-  farming = response.farming;
-  if (!attacking) {
-  	window.setTimeout(confirmPopup,4000);
-  } else {
-		setBackgroundData(false, true);
-		window.setTimeout(sendAttack, 4000);
-  }
-});
+
+
+window.onload = function() {
+	chrome.extension.sendMessage({text:"getData"},function(response){
+		attacking = response.attacking;
+		farming = response.farming;
+		if (!attacking) {
+			window.setTimeout(confirmPopup,1000);
+		} else {
+			setBackgroundData(false, true);
+			window.setTimeout(sendAttack, 1000);
+		}
+	});
+}
 
 function sendAttack() {
 	document.getElementById('troop_confirm_go').click();
