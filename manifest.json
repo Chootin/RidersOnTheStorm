@@ -1,8 +1,11 @@
 {
   "manifest_version": 2,
-  "name": "Tribalwars Farmer",
+  "name": "Tribal Wars Farmer",
   "version": "0.1",
-	"icons": {"18": "farm_assistent.png"},
+	"page_action": {
+    "default_icon": "farm_assistent.png",
+		"default_title": "Tribal Wars Farmer"
+  },
   "content_scripts": [
     {
       "matches": [

@@ -25,7 +25,7 @@ var safeFarm = [
 	"294|403",
 	"292|402",
 	"291|402",
-	"298|400",
+	"298|399",
 	"291|399",
 	"290|399",
 	"298|399"
@@ -53,6 +53,8 @@ window.onload = function() {
 			setBackgroundData(false, true);
 			window.setTimeout(sendAttack, 1000);
 		}
+	});
+	chrome.extension.sendMessage({text:"showAction"},function(response){
 	});
 }
 
