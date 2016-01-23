@@ -34,14 +34,12 @@ var safeFarm = [
 var attacking = false;
 var farming = false;
 
-window.addEventListener("beforeunload", function (e) {
+window.onbeforeunload = function (e) {
 	if (farming && !attacking) {
-  	var confirmationMessage = 'This is your farm tab, are you sure you want to leave?';
-  	return confirmationMessage; //Gecko + Webkit, Safari, Chrome etc.
-	} else {
-		return null;
+		return 'This is your farm tab, are you sure you want to leave?';
 	}
-});
+	return undefined;
+};
 
 
 
@@ -64,43 +62,40 @@ function sendAttack() {
 
 function confirmPopup() {
 	if (!farming) {
-		var confirm = window.confirm('Farm time!?');
-		if (confirm) {
-			wait();
+		farming = window.confirm('Farm time!?');
+		if (farming) {
+			loop();
 		}
 	} else {
-		wait();
+		loop();
 	}
 }
 
-function wait() {
+function loop() {
 	if (!attacking) {
-		window.setTimeout(wait,1000);
+		window.setTimeout(loop,1000);
 		verifyAndFarm();
 	}
 }
 function verifyAndFarm() {
 	var lc_numeral = document.getElementById('units_entry_all_light');
-	var lc_count = lc_numeral.innerHTML;
-	lc_count = lc_count.replace('(','').replace(')','');
-	if (lc_count >= 5) {
-		var lc_input = document.getElementById('unit_input_light');
-		lc_input.value = 5;
-		var coord_input = document.querySelector('#place_target > input');
-		var selectedFarm = selectFarm();
-		coord_input.value = selectedFarm;
-		console.log("Attacking: " + selectedFarm);
+	if (lc_numeral != undefined) {
+		var lc_count = lc_numeral.innerHTML;
+		lc_count = lc_count.replace('(','').replace(')','');
+		if (lc_count >= 5) {
+			var lc_input = document.getElementById('unit_input_light');
+			lc_input.value = 5;
+			var coord_input = document.querySelector('#place_target > input');
+			var selectedFarm = selectFarm();
+			coord_input.value = selectedFarm;
+			console.log("Attacking: " + selectedFarm);
 
-		setBackgroundData(true, true);
+			setBackgroundData(true, true);
 
-		document.getElementById('target_attack').click();
-		attacking = true;
+			document.getElementById('target_attack').click();
+			attacking = true;
+		}
 	}
-}
-
-function setBackgroundData(attackValue, farmingValue) {
-	chrome.runtime.sendMessage({text:"setData", value:attackValue, farming:farmingValue}, function(response) {
-	});
 }
 
 function selectFarm() {
@@ -123,5 +118,10 @@ function selectFarm() {
 	}
 	
 	return safeFarm[index];
+}
+
+function setBackgroundData(attackValue, farmingValue) {
+	chrome.runtime.sendMessage({text:"setData", value:attackValue, farming:farmingValue}, function(response) {
+	});
 }
 
