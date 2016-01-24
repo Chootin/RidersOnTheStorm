@@ -1,20 +1,24 @@
 {
-  "manifest_version": 2,
-  "name": "Tribal Wars Farmer",
-  "version": "1.0",
-	"page_action": {
-    "default_icon": "farm_assistent.png",
-		"default_title": "Enable Tribal Wars Farmer"
-  },
-  "content_scripts": [
-    {
-      "matches": [
-        "https://*.tribalwars.net/game.php?*screen=place*"
-      ],
-      "js": ["content.js"]
-    }
-  ],
-  "background": {
-    "scripts": ["background.js"]
-  }
+    "manifest_version": 2,
+    "name": "Tribal Wars Farmer",
+    "version": "1.0",
+    "page_action": {
+        "default_icon": "farm_assistent.png",
+        "default_title": "Enable Tribal Wars Farmer"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://*.tribalwars.net/game.php?*screen=place*"
+            ],
+            "js": ["content.js"]
+        }
+    ],
+    "background": {
+        "scripts": ["background.js"]
+    },
+    "permissions": [
+        "storage"
+    ],
+    "options_page": "options.html"
 }

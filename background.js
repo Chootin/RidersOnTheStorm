@@ -1,28 +1,57 @@
-var views = chrome.extension.getViews();
+"use strict";
+
+var farmTabId;
 var isAttacking = false;
 var isFarming = false;
 
-chrome.extension.onMessage.addListener(function(message,sender,sendResponse){
-  if (message.text == "getData") {
-    sendResponse({attacking:isAttacking, farming:isFarming});
-  } else if (message.text == "setData") {
-		isAttacking = message.value;
-		isFarming = message.farming;
-		sendResponse(null);
-  } else if (message.text == "showAction") {
-		chrome.pageAction.show(sender.tab.id);
-		sendResponse(null);
-	}
+chrome.extension.onMessage.addListener(function (message, sender, sendResponse) {
+    if (message.text === 'alreadyRunning') {
+        var runningOnAnotherTab = (farmTabId != undefined && sender.tab.id != farmTabId);
+        sendResponse({runningElsewhere: runningOnAnotherTab});
+    } else if (message.text === 'getData') {
+        sendResponse({attacking: isAttacking, farming: isFarming});
+    } else if (message.text === 'setData') {
+        isAttacking = message.value;
+        isFarming = message.farming;
+        sendResponse({});
+    } else if (message.text === 'showAction') {
+        chrome.pageAction.show(sender.tab.id);
+        setActionTitle(sender.tab.id);
+        sendResponse({});
+    } else if (message.text === 'disconnect') {
+        farmTabId = undefined;
+        isAttacking = false;
+        isFarming = false;
+    }
 });
 
-chrome.pageAction.onClicked.addListener(function(tab){
-	if (isFarming) {
-		isFarming = false;
-		chrome.pageAction.setTitle({tabId:tab.id, title:'Enable Tribal Wars Farmer'});
-		chrome.tabs.sendMessage(tab.id, {text:"stop"}, function() {});
-	} else {
-		isFarming = true;
-		chrome.pageAction.setTitle({tabId:tab.id, title:'Disable Tribal Wars Farmer'});
-		chrome.tabs.sendMessage(tab.id, {text:"start"}, function() {});
-	}
+chrome.pageAction.onClicked.addListener(function (tab) {
+    if (isFarming) {
+        if (tab.id === farmTabId) {
+            isFarming = false;
+            farmTabId = undefined;
+            chrome.tabs.sendMessage(tab.id, {text: 'stop'}, undefined);
+        } else {
+            chrome.pageAction.hide(tab.id);
+        }
+    } else {
+        isFarming = true;
+        farmTabId = tab.id;
+        chrome.tabs.sendMessage(tab.id, {text: 'start'}, undefined);
+    }
+    setActionTitle(tab.id);
+});
+
+var setActionTitle = function (tabId) {
+    if (isFarming) {
+        chrome.pageAction.setTitle({tabId: tabId, title: 'Disable Tribal Wars Farmer'});
+    } else {
+        chrome.pageAction.setTitle({tabId: tabId, title: 'Enable Tribal Wars Farmer'});
+    }
+};
+
+chrome.tabs.onTabReplaced.addListener(function (newId, oldId) {
+    if (oldId === farmTabId) {
+        farmTabId = newId;
+    }
 });
