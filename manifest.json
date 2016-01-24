@@ -20,5 +20,8 @@
     "permissions": [
         "storage"
     ],
-    "options_page": "options.html"
+    "options_page": "options.html",
+    "icons": {
+        "18": "farm_assistent.png"
+    }
 }
