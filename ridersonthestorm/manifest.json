@@ -1,6 +1,6 @@
 {
     "manifest_version": 2,
-    "name": "Tribal Wars Farmer",
+    "name": "Riders on the Storm",
     "version": "1.10",
     "page_action": {
         "default_icon": "farm_assistent_inactive.png",
@@ -22,6 +22,6 @@
     ],
     "options_page": "options.html",
     "icons": {
-        "18": "farm_assistent_active.png"
+        "32": "farm_assistent_active.png"
     }
 }
