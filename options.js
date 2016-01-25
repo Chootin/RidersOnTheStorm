@@ -1,6 +1,7 @@
 "use strict";
 
 var counter = 0;
+var totalCount = 0;
 
 window.onload = function() {
     restore();
@@ -22,15 +23,26 @@ function addExtraEntry() {
         listDiv.removeChild(inputNode);
         listDiv.removeChild(buttonNode);
         listDiv.removeChild(br);
+        totalCount--;
+        updateQuantity();
     }
 
     listDiv.appendChild(br);
     listDiv.appendChild(inputNode);
     listDiv.appendChild(buttonNode);
 
+    totalCount++;
+
+    updateQuantity();
+
     counter++;
 
     return inputNode;
+}
+
+function updateQuantity() {
+    var quantityField = document.getElementById('quantity');
+    quantityField.innerHTML = totalCount + ' farms available.';
 }
 
 function save() {
@@ -41,6 +53,7 @@ function save() {
             safeFarms[a] = fields[a].value.trim();
         }
     }
+    safeFarms.sort();
     chrome.storage.sync.set({safeFarms: safeFarms}, function() {
         var d = new Date();
         var confirmNode = document.getElementById('status');

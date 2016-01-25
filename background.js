@@ -45,8 +45,10 @@ chrome.pageAction.onClicked.addListener(function (tab) {
 var setActionTitle = function (tabId) {
     if (isFarming) {
         chrome.pageAction.setTitle({tabId: tabId, title: 'Disable Tribal Wars Farmer'});
+        chrome.pageAction.setIcon({tabId: tabId, path: 'farm_assistent_active.png'});
     } else {
         chrome.pageAction.setTitle({tabId: tabId, title: 'Enable Tribal Wars Farmer'});
+        chrome.pageAction.setIcon({tabId: tabId, path: 'farm_assistent_inactive.png'});
     }
 };
 

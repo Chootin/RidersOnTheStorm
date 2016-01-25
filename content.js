@@ -37,11 +37,11 @@ var start = function (running) {
 
         chrome.runtime.onMessage.addListener(function (message, sender, callback) {
             if (message.text === 'start') {
-                console.log('Starting farm bot');
+                alert('Tribal Wars farm bot started!');
                 farming = true;
                 loop();
             } else if (message.text === 'stop') {
-                console.log('Stopping farm bot');
+                alert('Tribal Wars farm bot stopped.');
                 farming = false;
             }
         });
