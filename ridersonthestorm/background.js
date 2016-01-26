@@ -3,16 +3,18 @@
 var farmTabId;
 var isAttacking = false;
 var isFarming = false;
+var currentAttack;
 
 chrome.extension.onMessage.addListener(function (message, sender, sendResponse) {
     if (message.text === 'alreadyRunning') {
         var runningOnAnotherTab = (farmTabId != undefined && sender.tab.id != farmTabId);
         sendResponse({runningElsewhere: runningOnAnotherTab});
     } else if (message.text === 'getData') {
-        sendResponse({attacking: isAttacking, farming: isFarming});
+        sendResponse({attacking: isAttacking, farming: isFarming, village: currentAttack});
     } else if (message.text === 'setData') {
         isAttacking = message.value;
         isFarming = message.farming;
+        currentAttack = message.village;
         sendResponse({});
     } else if (message.text === 'showAction') {
         chrome.pageAction.show(sender.tab.id);
@@ -22,6 +24,7 @@ chrome.extension.onMessage.addListener(function (message, sender, sendResponse) 
         farmTabId = undefined;
         isAttacking = false;
         isFarming = false;
+        setActionTitle(sender.tab.id);
     }
 });
 

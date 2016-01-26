@@ -11,8 +11,8 @@ var loop = function () {
     }
 };
 
-var setBackgroundData = function (attackValue, farmingValue) {
-    chrome.runtime.sendMessage({text:'setData', value:attackValue, farming:farmingValue}, undefined);
+var setBackgroundData = function (attackValue, farmingValue, village) {
+    chrome.runtime.sendMessage({text:'setData', value: attackValue, farming: farmingValue, village: village}, undefined);
 };
 
 var start = function (running) {
@@ -31,18 +31,24 @@ var start = function (running) {
         window.onunload = function () {
             if (farming && !attacking) {
                 console.log('Disconnecting farm bot');
-                chrome.extension.sendMessage({text: 'disconnect'}, undefined);
+                diconnect();
             }
         }
 
         chrome.runtime.onMessage.addListener(function (message, sender, callback) {
             if (message.text === 'start') {
-                alert('Tribal Wars farm bot started!');
-                farming = true;
-                loop();
+                if (safeFarm.length > 0) {
+                    alert('Tribal Wars farm bot started!');
+                    farming = true;
+                    loop();
+                } else {
+                    alert('Please set at least one safe farm in the extension options.');
+                    diconnect();
+                }
             } else if (message.text === 'stop') {
                 alert('Tribal Wars farm bot stopped.');
                 farming = false;
+                diconnect();
             }
         });
 
@@ -53,13 +59,19 @@ var start = function (running) {
                 loop();
             } else if (attacking) {
                 setBackgroundData(false, true);
-                window.setTimeout(sendAttack, 1000);
+                window.setTimeout(function () {sendAttack(response.village)}, 1000);
             }
         });
     }
 };
 
+function diconnect() {
+    chrome.extension.sendMessage({text: 'disconnect'}, undefined);
+}
+
 var verifyAndFarm = function () {
+    checkRefreshRequired();
+
     var lc_numeral = document.getElementById('units_entry_all_light');
     if (lc_numeral != undefined) {
         var lc_count = lc_numeral.innerHTML;
@@ -72,7 +84,7 @@ var verifyAndFarm = function () {
             coord_input.value = selectedFarm;
             console.log('Attacking: ' + selectedFarm);
 
-            setBackgroundData(true, true);
+            setBackgroundData(true, true, selectedFarm);
 
             document.getElementById('target_attack').click();
             attacking = true;
@@ -80,8 +92,31 @@ var verifyAndFarm = function () {
     }
 };
 
-var sendAttack = function () {
-    document.getElementById('troop_confirm_go').click();
+var doubleCheckRefresh = false;
+function checkRefreshRequired() {
+    var refreshRequiredCheck = document.querySelector('#content_value > table:nth-child(10) > tbody > tr:nth-child(2) > td:nth-child(3) > span');
+    if (refreshRequiredCheck != undefined && refreshRequired.innerHTML === '0:00:00') {
+        if (doubleCheckRefresh) {
+            location.reload();
+        } else {
+            doubleCheckRefresh = true;
+        }
+    }
+}
+
+var sendAttack = function (currentAttack) {
+    var errorBox = document.getElementsByClassName('error_box')[0];
+    if (errorBox == undefined) {
+        var sendAttackButton = document.getElementById('troop_confirm_go');
+        if (sendAttackButton != undefined) {
+            click();
+        } else {
+            document.setTimeout(sendAttack, 1000);
+        }
+    } else {
+        alert('Safe farm at: ' + currentAttack + ' does not exist, please remove it from the list and reload.');
+        diconnect();
+    }
 };
 
 var selectFarm = function () {
