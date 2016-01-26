@@ -30,8 +30,7 @@ var start = function (running) {
 
         window.onunload = function () {
             if (farming && !attacking) {
-                console.log('Disconnecting farm bot');
-                diconnect();
+                disconnect();
             }
         }
 
@@ -43,12 +42,12 @@ var start = function (running) {
                     loop();
                 } else {
                     alert('Please set at least one safe farm in the extension options.');
-                    diconnect();
+                    disconnect();
                 }
             } else if (message.text === 'stop') {
                 alert('Tribal Wars farm bot stopped.');
                 farming = false;
-                diconnect();
+                disconnect();
             }
         });
 
@@ -58,14 +57,16 @@ var start = function (running) {
             if (farming && !attacking) {
                 loop();
             } else if (attacking) {
-                setBackgroundData(false, true);
-                window.setTimeout(function () {sendAttack(response.village)}, 1000);
+                window.setTimeout(function () {sendAttack(response.village, 5)}, 1000);
             }
         });
+    } else {
+        console.log('TribalWarsFarmer: Detected to be running in another tab.');
     }
 };
 
-function diconnect() {
+function disconnect() {
+    console.log('TribalWarsFarmer: Disconnecting...');
     chrome.extension.sendMessage({text: 'disconnect'}, undefined);
 }
 
@@ -106,18 +107,25 @@ function checkRefreshRequired() {
     }
 }
 
-var sendAttack = function (currentAttack) {
+var sendAttack = function (currentAttack, remainingAttempts) {
     var errorBox = document.getElementsByClassName('error_box')[0];
     if (errorBox == undefined) {
         var sendAttackButton = document.getElementById('troop_confirm_go');
         if (sendAttackButton != undefined) {
+            setBackgroundData(false, true, undefined);
             sendAttackButton.click();
         } else {
-            window.setTimeout(sendAttack, 1000);
+            console.log('Confirm button could not be found.');
+            if (remainingAttempts !== 0) {
+                remainingAttempts--;
+                window.setTimeout(function () {sendAttack(currentAttack, remainingAttempts)}, 1000);
+            } else {
+                location.reload();
+            }
         }
     } else {
         alert('Safe farm at: ' + currentAttack + ' does not exist, please remove it from the list and reload.');
-        diconnect();
+        disconnect();
     }
 };
 
