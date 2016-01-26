@@ -55,8 +55,10 @@ var setActionTitle = function (tabId) {
     }
 };
 
+/*
 chrome.tabs.onTabReplaced.addListener(function (newId, oldId) {
     if (oldId === farmTabId) {
         farmTabId = newId;
     }
 });
+*/

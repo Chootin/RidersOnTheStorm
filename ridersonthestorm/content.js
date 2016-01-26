@@ -113,7 +113,7 @@ var sendAttack = function (currentAttack) {
         if (sendAttackButton != undefined) {
             sendAttackButton.click();
         } else {
-            document.setTimeout(sendAttack, 1000);
+            window.setTimeout(sendAttack, 1000);
         }
     } else {
         alert('Safe farm at: ' + currentAttack + ' does not exist, please remove it from the list and reload.');
