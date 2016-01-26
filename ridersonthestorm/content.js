@@ -19,7 +19,7 @@ var start = function (running) {
     chrome.storage.sync.get({safeFarms: []}, function (data) {
         safeFarm = data.safeFarms;
     });
-
+g
     if (!running.runningElsewhere) {
         chrome.extension.sendMessage({text: 'showAction'}, undefined);
         window.onbeforeunload = function (e) {
@@ -95,7 +95,7 @@ var verifyAndFarm = function () {
 var doubleCheckRefresh = false;
 function checkRefreshRequired() {
     var refreshRequiredCheck = document.querySelector('#content_value > table:nth-child(10) > tbody > tr:nth-child(2) > td:nth-child(3) > span');
-    if (refreshRequiredCheck != undefined && refreshRequired.innerHTML === '0:00:00') {
+    if (refreshRequiredCheck != undefined && refreshRequiredCheck.innerHTML === '0:00:00') {
         if (doubleCheckRefresh) {
             location.reload();
         } else {
