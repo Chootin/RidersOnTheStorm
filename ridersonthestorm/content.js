@@ -19,7 +19,7 @@ var start = function (running) {
     chrome.storage.sync.get({safeFarms: []}, function (data) {
         safeFarm = data.safeFarms;
     });
-g
+
     if (!running.runningElsewhere) {
         chrome.extension.sendMessage({text: 'showAction'}, undefined);
         window.onbeforeunload = function (e) {
@@ -97,6 +97,8 @@ function checkRefreshRequired() {
     var refreshRequiredCheck = document.querySelector('#content_value > table:nth-child(10) > tbody > tr:nth-child(2) > td:nth-child(3) > span');
     if (refreshRequiredCheck != undefined && refreshRequiredCheck.innerHTML === '0:00:00') {
         if (doubleCheckRefresh) {
+            window.onbeforeunload = undefined;
+            window.onunload = undefined;
             location.reload();
         } else {
             doubleCheckRefresh = true;
@@ -109,7 +111,7 @@ var sendAttack = function (currentAttack) {
     if (errorBox == undefined) {
         var sendAttackButton = document.getElementById('troop_confirm_go');
         if (sendAttackButton != undefined) {
-            click();
+            sendAttackButton.click();
         } else {
             document.setTimeout(sendAttack, 1000);
         }
