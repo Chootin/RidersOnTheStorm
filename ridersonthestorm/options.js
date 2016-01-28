@@ -9,12 +9,19 @@ window.onload = function() {
     document.getElementById('save').onclick = save;
 };
 
-function addExtraEntry() {
+function addExtraEntry(status) {
     var listDiv = document.getElementById('fields');
     var inputNode = document.createElement('input');
     inputNode.type = 'text';
     inputNode.className = 'safeFarm';
     inputNode.id = 'safeFarm' + counter;
+
+    var warningText = document.createElement('span');
+    if (status === 'changed') {
+        warningText.innerHTML = '   Warning! This village was found to have changed owners since the first run.';
+    } else if (status === 'missing') {
+        warningText.innerHTML = '   Warning! This village no longer exists.';
+    }
 
     var br = document.createElement('br');
     var buttonNode = document.createElement('button');
@@ -22,6 +29,7 @@ function addExtraEntry() {
     buttonNode.onclick = function() {
         listDiv.removeChild(inputNode);
         listDiv.removeChild(buttonNode);
+        listDiv.removeChild(warningText);
         listDiv.removeChild(br);
         totalCount--;
         updateQuantity();
@@ -30,6 +38,7 @@ function addExtraEntry() {
     listDiv.appendChild(br);
     listDiv.appendChild(inputNode);
     listDiv.appendChild(buttonNode);
+    listDiv.appendChild(warningText);
 
     totalCount++;
 
@@ -50,11 +59,11 @@ function save() {
     var safeFarms = [];
     for (var a = 0; a < fields.length; a++) {
         if (fields[a].value.trim() != '') {
-            safeFarms[a] = fields[a].value.trim();
+            safeFarms[a] = {coordinate: fields[a].value.trim(), owner: undefined};
         }
     }
     safeFarms.sort();
-    chrome.storage.sync.set({safeFarms: safeFarms}, function() {
+    chrome.storage.sync.set({safeFarms: safeFarms, missing: undefined, changedOwner: undefined}, function() {
         var d = new Date();
         var confirmNode = document.getElementById('status');
         confirmNode.innerHTML = 'Save completed at ' + d.getHours() + ':' + d.getMinutes() + '.';
@@ -62,10 +71,34 @@ function save() {
 }
 
 function restore() {
-    chrome.storage.sync.get({safeFarms: []}, function(data) {
-        for (var a = 0; a < data.safeFarms.length; a++) {
-            var node = addExtraEntry();
-            node.value = data.safeFarms[a];
+    chrome.storage.sync.get({safeFarms: [], changedOwner: [], missing: []}, function(data) {
+        var safeFarms = data.safeFarms;
+        var changedOwner = data.changedOwner;
+        var missing = data.missing;
+
+        if (safeFarms.length > 0) {
+            if (safeFarms[0].constructor !== {}.constructor) { //Check if the first element is a JSON object
+                for (var a = 0; a < safeFarms.length; a++) {
+                    safeFarms[a] = {coordinate: safeFarms[a], owner: undefined};
+                }
+            }
+            addRestoredData(safeFarms, missing, changedOwner);        
         }
     });
+}
+
+function addRestoredData(safeFarms, missing, changedOwner) {
+    for (var a = 0; a < safeFarms.length; a++) {
+        var node = addExtraEntry('normal');
+        node.value = safeFarms[a].coordinate;
+        console.log(safeFarms[a]);
+    }
+    for (var a = 0; a < missing.length; a++) {
+        var node = addExtraEntry('missing');
+        node.value = missing[a].coordinate;
+    }
+    for (var a = 0; a < changedOwner.length; a++) {
+        var node = addExtraEntry('changed');
+        node.value = changedOwner[a].coordinate;
+    }
 }

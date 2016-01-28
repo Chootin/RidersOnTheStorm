@@ -1,8 +1,37 @@
 "use strict";
 
 var safeFarm = [];
+var missingVillages = []
+var changedOwner = [];
 var attacking = false;
 var farming = false;
+
+
+var scanIndex = 0;
+function scanVillageOwners () {
+    if (scanIndex <== safeFarm.length) {
+        if (safeFarm[scanIndex].owner != undefined) {
+            inputFarm(safeFarm[scanIndex].coordinate);
+            window.setTimeout(function () {
+                var owner = getOwner();
+                safeFarm[scanIndex].owner = owner;
+                window.setTimeout(scanVillageOwner, 10);
+            }, 500);
+        }
+        safeIndex++;
+        if (scanIndex === safeFarm.length) {     
+            storeData();
+        }
+    }
+}
+
+function getOwner() {
+    return document.querySelector('//*[@id="ds_body"]/div[11]/div/span[2]/text()[1]').trim();
+}
+
+function storeData() {
+    chrome.storage.sync.set({safeFarms: safeFarm, missing: missingVillages, changedOwner: changedOwner});
+}
 
 var loop = function () {
     if (!attacking && farming) {
@@ -16,8 +45,11 @@ var setBackgroundData = function (attackValue, farmingValue, village) {
 };
 
 var start = function (running) {
-    chrome.storage.sync.get({safeFarms: []}, function (data) {
+    chrome.storage.sync.get({safeFarms: [], changedOwner: [], missing: []}, function (data) {
         safeFarm = data.safeFarms;
+        missingVillages = data.missing;
+        changedOwner = data.changedOwner;
+        scanVillageOwners();
     });
 
     if (!running.runningElsewhere) {
@@ -80,23 +112,43 @@ var verifyAndFarm = function () {
         if (lc_count >= 5) {
             var lc_input = document.getElementById('unit_input_light');
             lc_input.value = 5;
-            var coord_input = document.querySelector('#place_target > input');
             var selectedFarm = selectFarm();
-            coord_input.value = selectedFarm;
+            inputFarm(selectedFarm.coordinate);
             console.log('Attacking: ' + selectedFarm);
 
-            setBackgroundData(true, true, selectedFarm);
+            if (verifyOwnership()) {
+                setBackgroundData(true, true, selectedFarm.coordinate);
 
-            document.getElementById('target_attack').click();
-            attacking = true;
+                document.getElementById('target_attack').click();
+                attacking = true;   
+            } else {
+                moveToAnotherList(selectedFarm, changedOwner);
+            }
         }
     }
 };
 
+function moveToAnotherList(selectedFarm, list) {
+    var index = getSafeFarmIndex(selectedFarm);
+    var farm = safeFarm[index];
+    list.push(farm);
+    safeFarm.splice(index, 1);
+    storeData();
+}
+
+function verifyOwnership() {
+    return false;
+}
+
+function inputFarm(coordinates) {
+    var coord_input = document.querySelector('#place_target > input');
+    coord_input.value = coordinates;
+}
+
 var doubleCheckRefresh = false;
 function checkRefreshRequired() {
     var refreshRequiredCheck = document.querySelector('#content_value > table:nth-child(10) > tbody > tr:nth-child(2) > td:nth-child(3) > span');
-    if (refreshRequiredCheck != undefined && refreshRequiredCheck.innerHTML === '0:00:00') {
+    if (refreshRequiredCheck != undefined && refreshRequiredCheck.innerHTML.trim() === '0:00:00') {
         if (doubleCheckRefresh) {
             window.onbeforeunload = undefined;
             window.onunload = undefined;
@@ -124,8 +176,11 @@ var sendAttack = function (currentAttack, remainingAttempts) {
             }
         }
     } else {
-        alert('Safe farm at: ' + currentAttack + ' does not exist, please remove it from the list and reload.');
-        disconnect();
+        //alert('Safe farm at: ' + currentAttack + ' does not exist, please remove it from the list and reload.');
+        //disconnect();
+        moveToAnotherList(currentAttack, missingVillages);
+        setBackgroundData(false, true, undefined);
+        location.reload();
     }
 };
 
@@ -139,7 +194,7 @@ var selectFarm = function () {
         currentAttack = document.querySelector('#content_value > table:nth-child(10) > tbody > tr:nth-child(' + tempIndex + ') > td:nth-child(1) > span.quickedit-out > span > a > span');
         if (currentAttack != undefined) {
             currentAttackString = currentAttack.innerHTML;
-            if (currentAttackString.indexOf(safeFarm[index]) > -1) {
+            if (getSafeFarmIndex(currentAttackString) > -1) {
                 return selectFarm();
             }
             tempIndex++;
@@ -149,6 +204,15 @@ var selectFarm = function () {
     }
     return safeFarm[index];
 };
+
+function getSafeFarmIndex(coordinate) {
+    for (var a = 0; a < safeFarm.length; a++) {
+        if (safeFarm[a].coordinate === coordinate) {
+            return a;
+        }
+    }
+    return -1;
+}
 
 window.onload = function () {
     chrome.extension.sendMessage({text: 'alreadyRunning'}, start);
