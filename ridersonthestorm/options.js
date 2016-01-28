@@ -63,7 +63,7 @@ function save() {
         }
     }
     safeFarms.sort();
-    chrome.storage.sync.set({safeFarms: safeFarms, missing: undefined, changedOwner: undefined}, function() {
+    chrome.storage.sync.set({safeFarms: safeFarms, missing: [], changedOwner: []}, function() {
         var d = new Date();
         var confirmNode = document.getElementById('status');
         confirmNode.innerHTML = 'Save completed at ' + d.getHours() + ':' + d.getMinutes() + '.';
@@ -88,17 +88,25 @@ function restore() {
 }
 
 function addRestoredData(safeFarms, missing, changedOwner) {
+		console.log(safeFarms);
+		console.log(missing);
+		console.log(changedOwner);
     for (var a = 0; a < safeFarms.length; a++) {
-        var node = addExtraEntry('normal');
-        node.value = safeFarms[a].coordinate;
-        console.log(safeFarms[a]);
+		if (safeFarms[a] != null) {
+		    var node = addExtraEntry('normal');
+		    node.value = safeFarms[a].coordinate;
+		}
     }
     for (var a = 0; a < missing.length; a++) {
-        var node = addExtraEntry('missing');
-        node.value = missing[a].coordinate;
+		if (missing[a] != null) {
+		    var node = addExtraEntry('missing');
+		    node.value = missing[a].coordinate;
+		}
     }
     for (var a = 0; a < changedOwner.length; a++) {
-        var node = addExtraEntry('changed');
-        node.value = changedOwner[a].coordinate;
+		if (changedOwner[a] != null) {
+		    var node = addExtraEntry('changed');
+		    node.value = changedOwner[a].coordinate;
+		}
     }
 }

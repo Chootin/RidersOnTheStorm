@@ -9,8 +9,12 @@ var farming = false;
 
 var scanIndex = 0;
 function scanVillageOwners () {
-    if (scanIndex <== safeFarm.length) {
-        if (safeFarm[scanIndex].owner != undefined) {
+	console.log('loggin ' + scanIndex);
+	var timeoutSet = false;
+    if (scanIndex < safeFarm.length) {
+        if (safeFarm[scanIndex].owner == undefined) {
+			timeoutSet = true;
+			alert('asdf');
             inputFarm(safeFarm[scanIndex].coordinate);
             window.setTimeout(function () {
                 var owner = getOwner();
@@ -18,18 +22,28 @@ function scanVillageOwners () {
                 window.setTimeout(scanVillageOwner, 10);
             }, 500);
         }
-        safeIndex++;
+        scanIndex++;
         if (scanIndex === safeFarm.length) {     
             storeData();
-        }
+        } else if (!timeoutSet) {
+			window.setTimeout(scanVillageOwner, 10);
+		}
     }
 }
 
-function getOwner() {
-    return document.querySelector('//*[@id="ds_body"]/div[11]/div/span[2]/text()[1]').trim();
+function getOwner(village) {
+		var node = document.querySelector('#ds_body > div.target-select-autocomplete > div > span.village-info');
+		if (node != undefined) {
+			var child = node.childNodes[0];
+			return child.innerHTML.trim();
+		} else {
+			moveToAnotherList(village, missingVillages);
+		}
+		return undefined;
 }
 
 function storeData() {
+	console.log('Storing: ', safeFarm, missingVillages, changedOwner);
     chrome.storage.sync.set({safeFarms: safeFarm, missing: missingVillages, changedOwner: changedOwner});
 }
 
@@ -49,7 +63,6 @@ var start = function (running) {
         safeFarm = data.safeFarms;
         missingVillages = data.missing;
         changedOwner = data.changedOwner;
-        scanVillageOwners();
     });
 
     if (!running.runningElsewhere) {
@@ -70,11 +83,11 @@ var start = function (running) {
             if (message.text === 'start') {
                 if (safeFarm.length > 0) {
                     alert('Tribal Wars farm bot started!');
+   					scanVillageOwners();
                     farming = true;
                     loop();
                 } else {
-                    alert('Please set at least one safe farm in the extension options.');
-                    disconnect();
+										notEnoughFarms();
                 }
             } else if (message.text === 'stop') {
                 alert('Tribal Wars farm bot stopped.');
@@ -97,6 +110,11 @@ var start = function (running) {
     }
 };
 
+function notEnoughFarms() {
+	alert('Please set at least one safe farm in the extension options.');
+	disconnect();
+}
+
 function disconnect() {
     console.log('TribalWarsFarmer: Disconnecting...');
     chrome.extension.sendMessage({text: 'disconnect'}, undefined);
@@ -114,7 +132,7 @@ var verifyAndFarm = function () {
             lc_input.value = 5;
             var selectedFarm = selectFarm();
             inputFarm(selectedFarm.coordinate);
-            console.log('Attacking: ' + selectedFarm);
+            console.log('Attacking: ' + selectedFarm.coordinate);
 
             if (verifyOwnership()) {
                 setBackgroundData(true, true, selectedFarm.coordinate);
@@ -134,6 +152,12 @@ function moveToAnotherList(selectedFarm, list) {
     list.push(farm);
     safeFarm.splice(index, 1);
     storeData();
+
+		if (list === missingVillages) {
+			if (safeFarm.length === 0) {
+				notEnoughFarms();
+			}
+		}
 }
 
 function verifyOwnership() {
