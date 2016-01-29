@@ -5,12 +5,15 @@ var isAttacking = false;
 var isFarming = false;
 var currentAttack;
 
+var scanIndex = 0;
+var scanRunning = false;
+
 chrome.extension.onMessage.addListener(function (message, sender, sendResponse) {
     if (message.text === 'alreadyRunning') {
         var runningOnAnotherTab = (farmTabId != undefined && sender.tab.id != farmTabId);
         sendResponse({runningElsewhere: runningOnAnotherTab});
     } else if (message.text === 'getData') {
-        sendResponse({attacking: isAttacking, farming: isFarming, village: currentAttack});
+        sendResponse({attacking: isAttacking, farming: isFarming, village: currentAttack, scanRunning: scanRunning});
     } else if (message.text === 'setData') {
         isAttacking = message.value;
         isFarming = message.farming;
@@ -25,6 +28,14 @@ chrome.extension.onMessage.addListener(function (message, sender, sendResponse) 
         isAttacking = false;
         isFarming = false;
         setActionTitle(sender.tab.id);
+    } else if (message.text === 'scanIndex') {
+        sendResponse(scanIndex);
+    } else if (message.text === 'incScanIndex') {
+        scanIndex++;
+    } else if (message.text === 'runScan') {
+        scanRunning = true;
+    } else if (message.text === 'scanComplete') {
+        scanRunning = false;
     }
 });
 
@@ -54,11 +65,3 @@ var setActionTitle = function (tabId) {
         chrome.pageAction.setIcon({tabId: tabId, path: 'farm_assistent_inactive.png'});
     }
 };
-
-/*
-chrome.tabs.onTabReplaced.addListener(function (newId, oldId) {
-    if (oldId === farmTabId) {
-        farmTabId = newId;
-    }
-});
-*/

@@ -59,7 +59,7 @@ function save() {
     var safeFarms = [];
     for (var a = 0; a < fields.length; a++) {
         if (fields[a].value.trim() != '') {
-            safeFarms[a] = {coordinate: fields[a].value.trim(), owner: undefined};
+            safeFarms[a] = {coordinate: fields[a].value.trim(), owner: fields[a].data.owner};
         }
     }
     safeFarms.sort();
@@ -95,6 +95,7 @@ function addRestoredData(safeFarms, missing, changedOwner) {
 		if (safeFarms[a] != null) {
 		    var node = addExtraEntry('normal');
 		    node.value = safeFarms[a].coordinate;
+            node.data = {owner: safeFarms[a].owner};
 		}
     }
     for (var a = 0; a < missing.length; a++) {

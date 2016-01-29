@@ -7,44 +7,67 @@ var attacking = false;
 var farming = false;
 
 
-var scanIndex = 0;
-function scanVillageOwners () {
-	console.log('loggin ' + scanIndex);
+function scanVillageOwners (index) { //Types the coord into the box and hits the attack button - page will reload with the village details loaded in. Uses this information for the logic0
 	var timeoutSet = false;
-    if (scanIndex < safeFarm.length) {
-        if (safeFarm[scanIndex].owner == undefined) {
-			timeoutSet = true;
-			alert('asdf');
-            inputFarm(safeFarm[scanIndex].coordinate);
-            window.setTimeout(function () {
-                var owner = getOwner();
-                safeFarm[scanIndex].owner = owner;
-                window.setTimeout(scanVillageOwner, 10);
-            }, 500);
-        }
-        scanIndex++;
-        if (scanIndex === safeFarm.length) {     
+    if (index < safeFarm.length) {
+        chrome.extension.sendMessage({text: 'runScan'}, undefined);
+	    var node = document.querySelector('#place_target > div > span.village-info');
+        if (node != undefined) { //We are already scanning
+            var tempOwner = node.innerHTML.trim().split(' ');
+            tempOwner = tempOwner[1];
+
+            safeFarm[index].owner = tempOwner;
             storeData();
-        } else if (!timeoutSet) {
-			window.setTimeout(scanVillageOwner, 10);
-		}
+
+            deleteSelectedFarm();
+
+        } else if (safeFarm[index].owner == undefined) {
+            inputFarm(safeFarm[index].coordinate);
+            window.onbeforeonunload = undefined;
+            window.onunload = undefined;
+            clickAttack();
+        }
+
+        chrome.extension.sendMessage({text: 'incScanIndex'}, undefined);
+        chrome.extension.sendMessage({text: 'scanIndex'}, scanVillageOwners);
+    } else {
+        deleteSelectedFarm();
+        chrome.extension.sendMessage({text: 'scanComplete'}, undefined);
+        beginLoop();
     }
 }
 
-function getOwner(village) {
-		var node = document.querySelector('#ds_body > div.target-select-autocomplete > div > span.village-info');
-		if (node != undefined) {
-			var child = node.childNodes[0];
-			return child.innerHTML.trim();
-		} else {
-			moveToAnotherList(village, missingVillages);
-		}
-		return undefined;
+function deleteSelectedFarm() {
+    var deleteFarm = document.getElementsByClassName('village-delete');
+    if (deleteFarm.length > 0) {
+        deleteFarm = deleteFarm[0];
+        deleteFarm.click();
+    }
 }
 
-function storeData() {
+function storeData () {
 	console.log('Storing: ', safeFarm, missingVillages, changedOwner);
     chrome.storage.sync.set({safeFarms: safeFarm, missing: missingVillages, changedOwner: changedOwner});
+}
+
+function beginLoop () {
+    console.log('Starting loop');
+    if (!attacking) {
+        farming = true;
+        window.onbeforeunload = function (e) {
+            if (farming) {
+                return 'This is your farm tab, are you sure you want to leave?';
+            }
+        };
+
+        window.onunload = function () {
+            if (farming) {
+                disconnect();
+            }
+        }
+    }
+
+    loop();
 }
 
 var loop = function () {
@@ -63,31 +86,27 @@ var start = function (running) {
         safeFarm = data.safeFarms;
         missingVillages = data.missing;
         changedOwner = data.changedOwner;
+        dataRetrieved(running);
     });
+
+    
+};
+
+function dataRetrieved(running) {
+    console.log('data retrieved');
 
     if (!running.runningElsewhere) {
         chrome.extension.sendMessage({text: 'showAction'}, undefined);
-        window.onbeforeunload = function (e) {
-            if (farming && !attacking) {
-                return 'This is your farm tab, are you sure you want to leave?';
-            }
-        };
-
-        window.onunload = function () {
-            if (farming && !attacking) {
-                disconnect();
-            }
-        }
 
         chrome.runtime.onMessage.addListener(function (message, sender, callback) {
             if (message.text === 'start') {
                 if (safeFarm.length > 0) {
                     alert('Tribal Wars farm bot started!');
-   					scanVillageOwners();
-                    farming = true;
-                    loop();
+                    console.log('running the scan');
+                    chrome.extension.sendMessage({text: 'scanIndex'}, scanVillageOwners);
+
                 } else {
-										notEnoughFarms();
+					notEnoughFarms();
                 }
             } else if (message.text === 'stop') {
                 alert('Tribal Wars farm bot stopped.');
@@ -99,16 +118,21 @@ var start = function (running) {
         chrome.extension.sendMessage({text: 'getData'}, function (response) {
             attacking = response.attacking;
             farming = response.farming;
-            if (farming && !attacking) {
-                loop();
-            } else if (attacking) {
-                window.setTimeout(function () {sendAttack(response.village, 5)}, 1000);
+            if (response.scanRunning) {
+                console.log('continuing scan');
+                chrome.extension.sendMessage({text: 'scanIndex'}, scanVillageOwners);
+            } else {
+                if (farming && !attacking) {
+                    beginLoop();
+                } else if (attacking) {
+                    window.setTimeout(function () {sendAttack(response.village, 5)}, 1000);
+                }
             }
         });
     } else {
         console.log('TribalWarsFarmer: Detected to be running in another tab.');
     }
-};
+}
 
 function notEnoughFarms() {
 	alert('Please set at least one safe farm in the extension options.');
@@ -134,34 +158,31 @@ var verifyAndFarm = function () {
             inputFarm(selectedFarm.coordinate);
             console.log('Attacking: ' + selectedFarm.coordinate);
 
-            if (verifyOwnership()) {
-                setBackgroundData(true, true, selectedFarm.coordinate);
-
-                document.getElementById('target_attack').click();
-                attacking = true;   
-            } else {
-                moveToAnotherList(selectedFarm, changedOwner);
-            }
+            setBackgroundData(true, true, selectedFarm.coordinate);
+            clickAttack();
+            attacking = true;
         }
     }
 };
+
+function clickAttack() {
+    document.getElementById('target_attack').click();
+}
 
 function moveToAnotherList(selectedFarm, list) {
     var index = getSafeFarmIndex(selectedFarm);
     var farm = safeFarm[index];
     list.push(farm);
     safeFarm.splice(index, 1);
-    storeData();
 
-		if (list === missingVillages) {
-			if (safeFarm.length === 0) {
-				notEnoughFarms();
-			}
+    console.log('2');
+    //storeData();
+
+	if (list === missingVillages) {
+		if (safeFarm.length === 0) {
+			notEnoughFarms();
 		}
-}
-
-function verifyOwnership() {
-    return false;
+	}
 }
 
 function inputFarm(coordinates) {
@@ -169,16 +190,18 @@ function inputFarm(coordinates) {
     coord_input.value = coordinates;
 }
 
-var doubleCheckRefresh = false;
+var refreshTick = 0;
 function checkRefreshRequired() {
     var refreshRequiredCheck = document.querySelector('#content_value > table:nth-child(10) > tbody > tr:nth-child(2) > td:nth-child(3) > span');
     if (refreshRequiredCheck != undefined && refreshRequiredCheck.innerHTML.trim() === '0:00:00') {
-        if (doubleCheckRefresh) {
-            window.onbeforeunload = undefined;
-            window.onunload = undefined;
+        console.log('Game might be timing out...');
+        if (refreshTick > 5) {
+            console.log('Checking ' + 6 - refreshTick + ' more times.');
+            window.onbeforeunload = function () {};
+            window.onunload = function () {};
             location.reload();
         } else {
-            doubleCheckRefresh = true;
+            refreshTick++;
         }
     }
 }
@@ -186,6 +209,14 @@ function checkRefreshRequired() {
 var sendAttack = function (currentAttack, remainingAttempts) {
     var errorBox = document.getElementsByClassName('error_box')[0];
     if (errorBox == undefined) {
+        var owner = document.querySelector('#command-data-form > table:nth-child(8) > tbody > tr:nth-child(3) > td:nth-child(2) > a_').innerHTML.trim();
+        if (owner != safeFarm[getSafeFarmIndex(currentAttack)].owner) {
+            //BAD Owner has changed!
+            moveToAnotherList(selectedFarm, changedOwner);
+            setBackgroundData(false, true, undefined);
+            window.history.back();
+        }
+
         var sendAttackButton = document.getElementById('troop_confirm_go');
         if (sendAttackButton != undefined) {
             setBackgroundData(false, true, undefined);
