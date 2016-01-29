@@ -54,7 +54,6 @@ function storeData () {
 }
 
 function beginLoop () {
-    console.log('Starting loop');
     if (!attacking) {
         farming = true;
         window.onbeforeunload = function (e) {
@@ -96,8 +95,6 @@ var start = function (running) {
 };
 
 function dataRetrieved(running) {
-    console.log('data retrieved');
-
     if (!running.runningElsewhere) {
         chrome.extension.sendMessage({text: 'showAction'}, undefined);
 
@@ -105,7 +102,7 @@ function dataRetrieved(running) {
             if (message.text === 'start') {
                 if (safeFarm.length > 0) {
                     alert('Tribal Wars farm bot started!');
-                    console.log('running the scan');
+                    console.log('Starting owner scan!');
                     chrome.extension.sendMessage({text: 'scanIndex'}, scanVillageOwners);
 
                 } else {
@@ -122,7 +119,7 @@ function dataRetrieved(running) {
             attacking = response.attacking;
             farming = response.farming;
             if (response.scanRunning) {
-                console.log('continuing scan');
+                Console.log('Continuing scan...');
                 chrome.extension.sendMessage({text: 'scanIndex'}, scanVillageOwners);
             } else {
                 if (farming && !attacking) {
