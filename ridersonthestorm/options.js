@@ -40,6 +40,8 @@ function addExtraEntry(status) {
     listDiv.appendChild(buttonNode);
     listDiv.appendChild(warningText);
 
+    inputNode.data = {};
+
     totalCount++;
 
     updateQuantity();
@@ -61,12 +63,24 @@ function save() {
         if (fields[a].value.trim() != '') {
             var owner = undefined;
             if (fields[a].data.coordinate === fields[a].value.trim()) {
+                console.log('Preserving old owner information of: ' + fields[a].value + ' ' + fields[a].data.owner);
                 owner = fields[a].data.owner;
+            } else {
+                fields[a].data.owner = undefined;
             }
             safeFarms[a] = {coordinate: fields[a].value.trim(), owner: owner};
         }
     }
-    safeFarms.sort();
+    safeFarms.sort(
+        function (a, b) {
+            if (a.coordinate < b.coordinate) {
+                return -1;
+            } else if (a.coordinate > b.coordinate) {
+                return 1;
+            }
+            return 0;
+        }
+    );
     chrome.storage.sync.set({safeFarms: safeFarms, missing: [], changedOwner: []}, function() {
         var d = new Date();
         var confirmNode = document.getElementById('status');

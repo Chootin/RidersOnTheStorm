@@ -6,34 +6,52 @@ var changedOwner = [];
 var attacking = false;
 var farming = false;
 
+function cleanURL() {
+    var url = window.location.href.split('&try')[0];
+    var alreadyThere = window.location.href == url;
+    if (!alreadyThere) {
+        window.location.href = url;
+    }
+    return alreadyThere;
+}
 
-function scanVillageOwners (index) { //Types the coord into the box and hits the attack button - page will reload with the village details loaded in. Uses this information for the logic0
-	var timeoutSet = false;
+function scanVillageOwners (index) { //Types the coord into the box and hits the attack button - page will reload with the village details loaded in. Uses this information for the logic
     if (index < safeFarm.length) {
         chrome.extension.sendMessage({text: 'runScan'}, undefined);
-	    var node = document.querySelector('#place_target > div > span.village-info');
-        if (node != undefined) { //We are already scanning
-            var tempOwner = node.innerHTML.trim().split(' ');
-            tempOwner = tempOwner[1];
+
+        var confirmAttackList = document.getElementsByClassName('troop_confirm_go');
+        if (confirmAttackList.length > 0) { //We are already scanning
+            var tempOwner = undefined;
+
+            var owner = document.querySelector('#command-data-form > table:nth-child(8) > tbody > tr:nth-child(3) > td:nth-child(2) > a');
+            if (owner != undefined) {
+                tempOwner = owner.innerHTML.trim();
+            }
 
             safeFarm[index].owner = tempOwner;
             storeData();
 
-            deleteSelectedFarm();
+            chrome.extension.sendMessage({text: 'incScanIndex'}, undefined);
+
+            cleanURL();
 
         } else if (checkVillageMissing()) {
-            var errorBox = document.getElementsByClassName('error_box')[0];
-            errorBox.click();
+            chrome.extension.sendMessage({text: 'incScanIndex'}, undefined);
+            cleanURL();
         } else if (safeFarm[index].owner == undefined) {
             inputFarm(safeFarm[index].coordinate);
             window.onbeforeonunload = undefined;
             window.onunload = undefined;
-            clickAttack();
-        }
 
-        chrome.extension.sendMessage({text: 'incScanIndex'}, undefined);
-        chrome.extension.sendMessage({text: 'scanIndex'}, scanVillageOwners);
+            var lc_input = document.getElementById('unit_input_light');
+            lc_input.value = 1;
+            clickAttack();
+        } else if (safeFarm[index].owner != undefined) {
+            chrome.extension.sendMessage({text: 'incScanIndex'}, undefined);
+            chrome.extension.sendMessage({text: 'scanIndex'}, scanVillageOwners);
+        }
     } else {
+        console.log('Scan completed!');
         deleteSelectedFarm();
         chrome.extension.sendMessage({text: 'scanComplete'}, undefined);
         beginLoop();
@@ -103,8 +121,9 @@ function dataRetrieved(running) {
                 if (safeFarm.length > 0) {
                     alert('Tribal Wars farm bot started!');
                     console.log('Starting owner scan!');
-                    chrome.extension.sendMessage({text: 'scanIndex'}, scanVillageOwners);
-
+                    if (cleanURL()) {
+                        chrome.extension.sendMessage({text: 'scanIndex'}, scanVillageOwners);
+                    }
                 } else {
 					notEnoughFarms();
                 }
@@ -119,7 +138,7 @@ function dataRetrieved(running) {
             attacking = response.attacking;
             farming = response.farming;
             if (response.scanRunning) {
-                Console.log('Continuing scan...');
+                console.log('Continuing scan...');
                 chrome.extension.sendMessage({text: 'scanIndex'}, scanVillageOwners);
             } else {
                 if (farming && !attacking) {
@@ -210,26 +229,33 @@ function checkRefreshRequired() {
 }
 
 var sendAttack = function (currentAttack, remainingAttempts) {
+    var stop = false;
     if (!checkVillageMissing()) {
-        var owner = document.querySelector('#command-data-form > table:nth-child(8) > tbody > tr:nth-child(3) > td:nth-child(2) > a').innerHTML.trim();
+        var owner = document.querySelector('#command-data-form > table:nth-child(8) > tbody > tr:nth-child(3) > td:nth-child(2) > a');
+        if (owner != undefined) {
+            owner = owner.innerHTML.trim();
+        }
         if (owner != undefined && owner != safeFarm[getSafeFarmIndex(currentAttack)].owner) {
             //BAD Owner has changed!
             moveToAnotherList(selectedFarm, changedOwner);
             setBackgroundData(false, true, undefined);
-            window.history.back();
+            cleanURL();
+            stop = true;
         }
 
-        var sendAttackButton = document.getElementById('troop_confirm_go');
-        if (sendAttackButton != undefined) {
-            setBackgroundData(false, true, undefined);
-            sendAttackButton.click();
-        } else {
-            console.log('Confirm button could not be found.');
-            if (remainingAttempts !== 0) {
-                remainingAttempts--;
-                window.setTimeout(function () {sendAttack(currentAttack, remainingAttempts)}, 1000);
+        if (!stop) {
+            var sendAttackButton = document.getElementById('troop_confirm_go');
+            if (sendAttackButton != undefined) {
+                setBackgroundData(false, true, undefined);
+                sendAttackButton.click();
             } else {
-                location.reload();
+                console.log('Confirm button could not be found.');
+                if (remainingAttempts !== 0) {
+                    remainingAttempts--;
+                    window.setTimeout(function () {sendAttack(currentAttack, remainingAttempts)}, 1000);
+                } else {
+                    location.reload();
+                }
             }
         }
     } else {
