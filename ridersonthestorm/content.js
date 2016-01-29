@@ -21,6 +21,9 @@ function scanVillageOwners (index) { //Types the coord into the box and hits the
 
             deleteSelectedFarm();
 
+        } else if (checkVillageMissing()) {
+            var errorBox = document.getElementsByClassName('error_box')[0];
+            errorBox.click();
         } else if (safeFarm[index].owner == undefined) {
             inputFarm(safeFarm[index].coordinate);
             window.onbeforeonunload = undefined;
@@ -153,7 +156,9 @@ var verifyAndFarm = function () {
         lc_count = lc_count.replace('(', '').replace(')', '');
         if (lc_count >= 5) {
             var lc_input = document.getElementById('unit_input_light');
-            lc_input.value = 5;
+            lc_input.value = 5;            
+
+            randoAttempts = 0;
             var selectedFarm = selectFarm();
             inputFarm(selectedFarm.coordinate);
             console.log('Attacking: ' + selectedFarm.coordinate);
@@ -166,6 +171,8 @@ var verifyAndFarm = function () {
 };
 
 function clickAttack() {
+    window.onbeforeunload = function () {};
+    window.onunload = function () {};
     document.getElementById('target_attack').click();
 }
 
@@ -175,8 +182,7 @@ function moveToAnotherList(selectedFarm, list) {
     list.push(farm);
     safeFarm.splice(index, 1);
 
-    console.log('2');
-    //storeData();
+    storeData();
 
 	if (list === missingVillages) {
 		if (safeFarm.length === 0) {
@@ -207,10 +213,9 @@ function checkRefreshRequired() {
 }
 
 var sendAttack = function (currentAttack, remainingAttempts) {
-    var errorBox = document.getElementsByClassName('error_box')[0];
-    if (errorBox == undefined) {
-        var owner = document.querySelector('#command-data-form > table:nth-child(8) > tbody > tr:nth-child(3) > td:nth-child(2) > a_').innerHTML.trim();
-        if (owner != safeFarm[getSafeFarmIndex(currentAttack)].owner) {
+    if (!checkVillageMissing()) {
+        var owner = document.querySelector('#command-data-form > table:nth-child(8) > tbody > tr:nth-child(3) > td:nth-child(2) > a').innerHTML.trim();
+        if (owner != undefined && owner != safeFarm[getSafeFarmIndex(currentAttack)].owner) {
             //BAD Owner has changed!
             moveToAnotherList(selectedFarm, changedOwner);
             setBackgroundData(false, true, undefined);
@@ -231,14 +236,18 @@ var sendAttack = function (currentAttack, remainingAttempts) {
             }
         }
     } else {
-        //alert('Safe farm at: ' + currentAttack + ' does not exist, please remove it from the list and reload.');
-        //disconnect();
         moveToAnotherList(currentAttack, missingVillages);
         setBackgroundData(false, true, undefined);
         location.reload();
     }
 };
 
+function checkVillageMissing() {
+    var errorBox = document.getElementsByClassName('error_box')[0];
+    return (errorBox != undefined && errorBox.innerHTML.trim() === 'Target does not exist')
+}
+
+var randoAttempts;
 var selectFarm = function () {
     var index = parseInt(Math.random() * safeFarm.length);
     var currentAttack;
@@ -250,7 +259,11 @@ var selectFarm = function () {
         if (currentAttack != undefined) {
             currentAttackString = currentAttack.innerHTML;
             if (getSafeFarmIndex(currentAttackString) > -1) {
-                return selectFarm();
+                randoAttempts++;
+                if (randoAttempts > safeFarms.length * 2) {
+                    randoAttempts = 0;
+                    return selectFarm();
+                }
             }
             tempIndex++;
         } else {

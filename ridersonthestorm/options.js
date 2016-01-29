@@ -59,7 +59,11 @@ function save() {
     var safeFarms = [];
     for (var a = 0; a < fields.length; a++) {
         if (fields[a].value.trim() != '') {
-            safeFarms[a] = {coordinate: fields[a].value.trim(), owner: fields[a].data.owner};
+            var owner = undefined;
+            if (fields[a].data.coordinate === fields[a].value.trim()) {
+                owner = fields[a].data.owner;
+            }
+            safeFarms[a] = {coordinate: fields[a].value.trim(), owner: owner};
         }
     }
     safeFarms.sort();
@@ -68,6 +72,7 @@ function save() {
         var confirmNode = document.getElementById('status');
         confirmNode.innerHTML = 'Save completed at ' + d.getHours() + ':' + d.getMinutes() + '.';
     });
+    chrome.extension.sendMessage({text: 'disconnect'}, undefined);
 }
 
 function restore() {
@@ -95,19 +100,21 @@ function addRestoredData(safeFarms, missing, changedOwner) {
 		if (safeFarms[a] != null) {
 		    var node = addExtraEntry('normal');
 		    node.value = safeFarms[a].coordinate;
-            node.data = {owner: safeFarms[a].owner};
+            node.data = {coordinate: safeFarms[a].coordinate, owner: safeFarms[a].owner};
 		}
     }
     for (var a = 0; a < missing.length; a++) {
 		if (missing[a] != null) {
 		    var node = addExtraEntry('missing');
 		    node.value = missing[a].coordinate;
+            node.data = {};
 		}
     }
     for (var a = 0; a < changedOwner.length; a++) {
 		if (changedOwner[a] != null) {
 		    var node = addExtraEntry('changed');
 		    node.value = changedOwner[a].coordinate;
+            node.data = {};
 		}
     }
 }
