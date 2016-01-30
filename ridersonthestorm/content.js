@@ -169,7 +169,7 @@ function disconnect() {
 var verifyAndFarm = function () {
     checkRefreshRequired();
 
-    if (unitsAvailable) {
+    if (unitsAvailable()) {
         enterDefaultUnits();
 
         randoAttempts = 0;
@@ -199,7 +199,6 @@ var verifyAndFarm = function () {
 
 function unitsAvailable() {
     //defaultParty
-    var quantity;
 
     if (defaultParty.lc != undefined) {
         if (getQuantityOfUnitsAvailable('units_entry_all_light') < defaultParty.lc) {
@@ -208,19 +207,19 @@ function unitsAvailable() {
     }
 
     if (defaultParty.hc != undefined) {
-        if (getQuantityOfUnitsAvailable('units_entry_all_heavy') < defaultParty.lc) {
+        if (getQuantityOfUnitsAvailable('units_entry_all_heavy') < defaultParty.hc) {
             return false;
         }
     }
 
     if (defaultParty.ma != undefined) {
-        if (getQuantityOfUnitsAvailable('units_entry_all_marcher') < defaultParty.lc) {
+        if (getQuantityOfUnitsAvailable('units_entry_all_marcher') < defaultParty.ma) {
             return false;
         }
     }
 
     if (defaultParty.ms != undefined) {
-        if (getQuantityOfUnitsAvailable('units_entry_all_spy') < defaultParty.lc) {
+        if (getQuantityOfUnitsAvailable('units_entry_all_spy') < defaultParty.ms) {
             return false;
         }
     }
