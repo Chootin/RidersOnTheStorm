@@ -349,8 +349,11 @@ var selectFarm = function () {
                 randoAttempts++;
                 if (randoAttempts > safeFarms.length * 2) {
                     randoAttempts = 0;
-                    return selectFarm();
+                    break;
                 }
+            } else {
+                randoAttempts = 0;
+                break;
             }
             tempIndex++;
         } else {
