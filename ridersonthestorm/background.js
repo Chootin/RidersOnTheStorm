@@ -8,6 +8,8 @@ var currentAttack;
 var scanIndex = 0;
 var scanRunning = false;
 
+var stuck = false;
+
 chrome.extension.onMessage.addListener(function (message, sender, sendResponse) {
     if (message.text === 'alreadyRunning') {
         var runningOnAnotherTab = (farmTabId != undefined && sender.tab.id != farmTabId);
@@ -36,7 +38,11 @@ chrome.extension.onMessage.addListener(function (message, sender, sendResponse) 
         scanRunning = true;
     } else if (message.text === 'scanComplete') {
         scanRunning = false;
-    }
+    } else if (message.text === 'setStuck') {
+		stuck = true;
+	} else if (message.text === 'getStuck') {
+		sendResponse(stuck);
+	}
 });
 
 chrome.pageAction.onClicked.addListener(function (tab) {

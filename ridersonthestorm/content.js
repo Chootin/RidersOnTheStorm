@@ -228,8 +228,10 @@ function checkRefreshRequired() {
     }
 }
 
+var stuck = false;
 var sendAttack = function (currentAttack, remainingAttempts) {
     var stop = false;
+	chrome.extension.sendMessage({text: 'getStuck'}, function (response) {stuck = response});
     if (!checkVillageMissing()) {
         var owner = document.querySelector('#command-data-form > table:nth-child(8) > tbody > tr:nth-child(3) > td:nth-child(2) > a');
         if (owner != undefined) {
@@ -254,7 +256,13 @@ var sendAttack = function (currentAttack, remainingAttempts) {
                     remainingAttempts--;
                     window.setTimeout(function () {sendAttack(currentAttack, remainingAttempts)}, 1000);
                 } else {
-                    location.reload();
+    				chrome.extension.sendMessage({text: 'setStuck'}, undefined);
+					if (!stuck) {
+                    	location.reload();
+					} else {
+						setBackgroundData(false, true, undefined);
+						cleanURL();
+					}
                 }
             }
         }
