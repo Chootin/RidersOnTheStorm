@@ -39,7 +39,7 @@ chrome.extension.onMessage.addListener(function (message, sender, sendResponse) 
     } else if (message.text === 'scanComplete') {
         scanRunning = false;
     } else if (message.text === 'setStuck') {
-		stuck = true;
+		stuck = message.stuck;
 	} else if (message.text === 'getStuck') {
 		sendResponse(stuck);
 	}

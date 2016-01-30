@@ -1,10 +1,12 @@
 "use strict";
 
+var defaultParty = {lc: "5"};
 var safeFarm = [];
 var missingVillages = []
 var changedOwner = [];
 var attacking = false;
 var farming = false;
+var haltLoop = false;
 
 function cleanURL() {
     var url = window.location.href.split('&try')[0];
@@ -21,7 +23,7 @@ function scanVillageOwners (index) { //Types the coord into the box and hits the
 
         var confirmAttackList = document.getElementsByClassName('troop_confirm_go');
         if (confirmAttackList.length > 0) { //We are already scanning
-            var tempOwner = undefined;
+            var tempOwner = 'barbarian';
 
             var owner = document.querySelector('#command-data-form > table:nth-child(8) > tbody > tr:nth-child(3) > td:nth-child(2) > a');
             if (owner != undefined) {
@@ -92,7 +94,6 @@ function beginLoop () {
 
 var loop = function () {
     if (!attacking && farming) {
-        window.setTimeout(loop, 1000);
         verifyAndFarm();
     }
 };
@@ -102,10 +103,12 @@ var setBackgroundData = function (attackValue, farmingValue, village) {
 };
 
 var start = function (running) {
-    chrome.storage.sync.get({safeFarms: [], changedOwner: [], missing: []}, function (data) {
+    chrome.storage.sync.get({safeFarms: [], changedOwner: [], missing: [], defaultFarmParty: {lc: 5}}, function (data) {
         safeFarm = data.safeFarms;
         missingVillages = data.missing;
         changedOwner = data.changedOwner;
+        defaultParty = data.defaultFarmParty;
+        
         dataRetrieved(running);
     });
 
@@ -166,6 +169,19 @@ function disconnect() {
 var verifyAndFarm = function () {
     checkRefreshRequired();
 
+    if (unitsAvailable) {
+        enterDefaultUnits();
+
+        randoAttempts = 0;
+        var selectedFarm = selectFarm();
+        inputFarm(selectedFarm.coordinate);
+        console.log('Attacking: ' + selectedFarm.coordinate);
+
+        setBackgroundData(true, true, selectedFarm.coordinate);
+        clickAttack();
+        attacking = true;
+    }
+
     var lc_numeral = document.getElementById('units_entry_all_light');
     if (lc_numeral != undefined) {
         var lc_count = lc_numeral.innerHTML;
@@ -174,17 +190,64 @@ var verifyAndFarm = function () {
             var lc_input = document.getElementById('unit_input_light');
             lc_input.value = 5;            
 
-            randoAttempts = 0;
-            var selectedFarm = selectFarm();
-            inputFarm(selectedFarm.coordinate);
-            console.log('Attacking: ' + selectedFarm.coordinate);
-
-            setBackgroundData(true, true, selectedFarm.coordinate);
-            clickAttack();
-            attacking = true;
+            
         }
     }
+
+    window.setTimeout(loop, 1000);
 };
+
+function unitsAvailable() {
+    //defaultParty
+    var quantity;
+
+    if (defaultParty.lc != undefined) {
+        if (getQuantityOfUnitsAvailable('units_entry_all_light') < defaultParty.lc) {
+            return false;
+        }
+    }
+
+    if (defaultParty.hc != undefined) {
+        if (getQuantityOfUnitsAvailable('units_entry_all_heavy') < defaultParty.lc) {
+            return false;
+        }
+    }
+
+    if (defaultParty.ma != undefined) {
+        if (getQuantityOfUnitsAvailable('units_entry_all_marcher') < defaultParty.lc) {
+            return false;
+        }
+    }
+
+    if (defaultParty.ms != undefined) {
+        if (getQuantityOfUnitsAvailable('units_entry_all_spy') < defaultParty.lc) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function getQuantityOfUnitsAvailable(id) {
+    var quantity = document.getElementById(id);
+    if (quantity != undefined) {
+        quantity = quantity.innerHTML;
+        return quantity.replace('(', '').replace(')', '');
+    }
+    return 0;    
+}
+
+function enterDefaultUnits() {
+    enterUnits('unit_input_light', defaultParty.lc);
+    enterUnits('unit_input_heavy', defaultParty.hc);
+    enterUnits('unit_input_marcher', defaultParty.ma);
+    enterUnits('unit_input_spy', defaultParty.ms);
+}
+
+function enterUnits(id, number) {
+    var input = document.getElementById(id);
+    input.value = number
+}
 
 function clickAttack() {
     window.onbeforeunload = function () {};
@@ -217,8 +280,9 @@ function checkRefreshRequired() {
     var refreshRequiredCheck = document.querySelector('#content_value > table:nth-child(10) > tbody > tr:nth-child(2) > td:nth-child(3) > span');
     if (refreshRequiredCheck != undefined && refreshRequiredCheck.innerHTML.trim() === '0:00:00') {
         console.log('Game might be timing out...');
+        console.log('Checking ' + (6 - refreshTick) + ' more times.');
         if (refreshTick > 5) {
-            console.log('Checking ' + 6 - refreshTick + ' more times.');
+            console.log('Game has timed out, refreshing.');
             window.onbeforeunload = function () {};
             window.onunload = function () {};
             location.reload();
@@ -239,7 +303,8 @@ var sendAttack = function (currentAttack, remainingAttempts) {
         }
         if (owner != undefined && owner != safeFarm[getSafeFarmIndex(currentAttack)].owner) {
             //BAD Owner has changed!
-            moveToAnotherList(selectedFarm, changedOwner);
+            console.log('Village owned by: ' + owner + ' has changed owner to: ' + safeFarm[getSafeFarmIndex(currentAttack)].owner);
+            moveToAnotherList(currentAttack, changedOwner);
             setBackgroundData(false, true, undefined);
             cleanURL();
             stop = true;
@@ -256,11 +321,13 @@ var sendAttack = function (currentAttack, remainingAttempts) {
                     remainingAttempts--;
                     window.setTimeout(function () {sendAttack(currentAttack, remainingAttempts)}, 1000);
                 } else {
-    				chrome.extension.sendMessage({text: 'setStuck'}, undefined);
 					if (!stuck) {
+    				    chrome.extension.sendMessage({text: 'setStuck', stuck: true}, undefined);
                     	location.reload();
 					} else {
+                        console.log('Bot is stuck, cancelling attack attempt.');
 						setBackgroundData(false, true, undefined);
+    				    chrome.extension.sendMessage({text: 'setStuck', stuck: false}, undefined);
 						cleanURL();
 					}
                 }
