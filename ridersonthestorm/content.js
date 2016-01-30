@@ -8,6 +8,8 @@ var attacking = false;
 var farming = false;
 var haltLoop = false;
 
+var windowLoaded;
+
 function cleanURL() {
     var url = window.location.href.split('&try')[0];
     var alreadyThere = window.location.href == url;
@@ -87,13 +89,13 @@ function beginLoop () {
                 disconnect();
             }
         }
-    }
 
-    loop();
+        loop();
+    }
 }
 
 var loop = function () {
-    if (!attacking && farming) {
+    if (farming) {
         verifyAndFarm();
     }
 };
@@ -115,7 +117,7 @@ var start = function (running) {
     
 };
 
-function dataRetrieved(running) {
+function dataRetrieved (running) {
     if (!running.runningElsewhere) {
         chrome.extension.sendMessage({text: 'showAction'}, undefined);
 
@@ -156,12 +158,12 @@ function dataRetrieved(running) {
     }
 }
 
-function notEnoughFarms() {
+function notEnoughFarms () {
 	alert('Please set at least one safe farm in the extension options.');
 	disconnect();
 }
 
-function disconnect() {
+function disconnect () {
     console.log('TribalWarsFarmer: Disconnecting...');
     chrome.extension.sendMessage({text: 'disconnect'}, undefined);
 }
@@ -182,43 +184,31 @@ var verifyAndFarm = function () {
         attacking = true;
     }
 
-    var lc_numeral = document.getElementById('units_entry_all_light');
-    if (lc_numeral != undefined) {
-        var lc_count = lc_numeral.innerHTML;
-        lc_count = lc_count.replace('(', '').replace(')', '');
-        if (lc_count >= 5) {
-            var lc_input = document.getElementById('unit_input_light');
-            lc_input.value = 5;            
-
-            
-        }
-    }
-
     window.setTimeout(loop, 1000);
 };
 
 function unitsAvailable() {
     //defaultParty
 
-    if (defaultParty.lc != undefined) {
+    if (defaultParty.lc != undefined && defaultParty.lc.trim() != '') {
         if (getQuantityOfUnitsAvailable('units_entry_all_light') < defaultParty.lc) {
             return false;
         }
     }
 
-    if (defaultParty.hc != undefined) {
+    if (defaultParty.hc != undefined && defaultParty.hc.trim() != '') {
         if (getQuantityOfUnitsAvailable('units_entry_all_heavy') < defaultParty.hc) {
             return false;
         }
     }
 
-    if (defaultParty.ma != undefined) {
+    if (defaultParty.ma != undefined && defaultParty.ma.trim() != '') {
         if (getQuantityOfUnitsAvailable('units_entry_all_marcher') < defaultParty.ma) {
             return false;
         }
     }
 
-    if (defaultParty.ms != undefined) {
+    if (defaultParty.ms != undefined && defaultParty.ms.trim() != '') {
         if (getQuantityOfUnitsAvailable('units_entry_all_spy') < defaultParty.ms) {
             return false;
         }
@@ -227,34 +217,34 @@ function unitsAvailable() {
     return true;
 }
 
-function getQuantityOfUnitsAvailable(id) {
+function getQuantityOfUnitsAvailable (id) {
     var quantity = document.getElementById(id);
     if (quantity != undefined) {
         quantity = quantity.innerHTML;
-        return quantity.replace('(', '').replace(')', '');
+        return parseInt(quantity.replace('(', '').replace(')', ''));
     }
     return 0;    
 }
 
-function enterDefaultUnits() {
+function enterDefaultUnits () {
     enterUnits('unit_input_light', defaultParty.lc);
     enterUnits('unit_input_heavy', defaultParty.hc);
     enterUnits('unit_input_marcher', defaultParty.ma);
     enterUnits('unit_input_spy', defaultParty.ms);
 }
 
-function enterUnits(id, number) {
+function enterUnits (id, number) {
     var input = document.getElementById(id);
     input.value = number
 }
 
-function clickAttack() {
+function clickAttack () {
     window.onbeforeunload = function () {};
     window.onunload = function () {};
     document.getElementById('target_attack').click();
 }
 
-function moveToAnotherList(selectedFarm, list) {
+function moveToAnotherList (selectedFarm, list) {
     var index = getSafeFarmIndex(selectedFarm);
     var farm = safeFarm[index];
     list.push(farm);
@@ -269,22 +259,20 @@ function moveToAnotherList(selectedFarm, list) {
 	}
 }
 
-function inputFarm(coordinates) {
+function inputFarm (coordinates) {
     var coord_input = document.querySelector('#place_target > input');
     coord_input.value = coordinates;
 }
 
 var refreshTick = 0;
-function checkRefreshRequired() {
+function checkRefreshRequired () {
     var refreshRequiredCheck = document.querySelector('#content_value > table:nth-child(10) > tbody > tr:nth-child(2) > td:nth-child(3) > span');
     if (refreshRequiredCheck != undefined && refreshRequiredCheck.innerHTML.trim() === '0:00:00') {
         console.log('Game might be timing out...');
         console.log('Checking ' + (6 - refreshTick) + ' more times.');
         if (refreshTick > 5) {
             console.log('Game has timed out, refreshing.');
-            window.onbeforeunload = function () {};
-            window.onunload = function () {};
-            location.reload();
+            reload();
         } else {
             refreshTick++;
         }
@@ -322,24 +310,26 @@ var sendAttack = function (currentAttack, remainingAttempts) {
                 } else {
 					if (!stuck) {
     				    chrome.extension.sendMessage({text: 'setStuck', stuck: true}, undefined);
-                    	location.reload();
+                    	reload();
 					} else {
                         console.log('Bot is stuck, cancelling attack attempt.');
 						setBackgroundData(false, true, undefined);
     				    chrome.extension.sendMessage({text: 'setStuck', stuck: false}, undefined);
-						cleanURL();
+						if (cleanURL()) {
+                            reload();
+                        }
 					}
                 }
             }
         }
     } else {
-        moveToAnotherList(currentAttack, missingVillages);
+        moveToAnotherList (currentAttack, missingVillages);
         setBackgroundData(false, true, undefined);
-        location.reload();
+        reload();
     }
 };
 
-function checkVillageMissing() {
+function checkVillageMissing () {
     var errorBox = document.getElementsByClassName('error_box')[0];
     return (errorBox != undefined && errorBox.innerHTML.trim() === 'Target does not exist')
 }
@@ -370,7 +360,7 @@ var selectFarm = function () {
     return safeFarm[index];
 };
 
-function getSafeFarmIndex(coordinate) {
+function getSafeFarmIndex (coordinate) {
     for (var a = 0; a < safeFarm.length; a++) {
         if (safeFarm[a].coordinate === coordinate) {
             return a;
@@ -379,6 +369,27 @@ function getSafeFarmIndex(coordinate) {
     return -1;
 }
 
+function botCheckCheck () {
+    var botCheckInput = document.getElementById('bot_check_code');
+    return botCheckInput != undefined;
+}
+
+function reload () {
+    window.onbeforeunload = function () {};
+    window.onunload = function () {};
+    setTimeout(location.reload, 1000);
+}
+
+window.setTimeout(function () {
+    if (!windowLoaded) {
+        console.log('Page failed to load after 20 seconds, refreshing.');
+        reload();
+    }
+}, 20000);
+
 window.onload = function () {
-    chrome.extension.sendMessage({text: 'alreadyRunning'}, start);
+    windowLoaded = true;
+    if (!botCheckCheck()) {
+        chrome.extension.sendMessage({text: 'alreadyRunning'}, start);
+    }
 };
