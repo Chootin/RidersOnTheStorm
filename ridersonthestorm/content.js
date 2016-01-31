@@ -111,18 +111,21 @@ var start = function (running) {
         missingVillages = data.missing;
         changedOwner = data.changedOwner;
         defaultParty = data.defaultFarmParty;
-
-        for (var a = 0; a < safeFarm.length; a++) {
-            if (safeFarm[a].priority != undefined && safeFarm[a].priority === true) {
-                priorityVillages.push(safeFarm[a]);
-            }
-        }
+        generatePriorityFarmList();
         
         dataRetrieved(running);
     });
 
     
 };
+
+function generatePriorityFarmList () {
+    for (var a = 0; a < safeFarm.length; a++) {
+        if (safeFarm[a].priority != undefined && safeFarm[a].priority === true) {
+            priorityVillages.push(safeFarm[a]);
+        }
+    }
+}
 
 function dataRetrieved (running) {
     if (!running.runningElsewhere) {
@@ -264,6 +267,8 @@ function moveToAnotherList (selectedFarm, list) {
 			notEnoughFarms();
 		}
 	}
+
+    generatePriorityFarmList();
 }
 
 function inputFarm (coordinates) {
