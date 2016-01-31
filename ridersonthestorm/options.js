@@ -9,7 +9,7 @@ window.onload = function() {
     document.getElementById('save').onclick = save;
 };
 
-function addExtraEntry(status) {
+function addExtraEntry(status, priority) {
     var listDiv = document.getElementById('fields');
     var inputNode = document.createElement('input');
     inputNode.type = 'text';
@@ -25,8 +25,11 @@ function addExtraEntry(status) {
 
     var br = document.createElement('br');
     var buttonNode = document.createElement('button');
+    var priorityBox = document.createElement('input');
+    priorityBox.type = 'checkbox';
     buttonNode.innerHTML = 'Remove';
     buttonNode.onclick = function() {
+        listDiv.removeChild(priorityBox);
         listDiv.removeChild(inputNode);
         listDiv.removeChild(buttonNode);
         listDiv.removeChild(warningText);
@@ -36,11 +39,17 @@ function addExtraEntry(status) {
     }
 
     listDiv.appendChild(br);
+    listDiv.appendChild(priorityBox);
     listDiv.appendChild(inputNode);
     listDiv.appendChild(buttonNode);
     listDiv.appendChild(warningText);
 
     inputNode.data = {};
+    inputNode.priorityBox = priorityBox;
+
+    if (priority) {
+        priorityBox.checked = true;
+    }
 
     totalCount++;
 
@@ -68,7 +77,7 @@ function save() {
             } else {
                 fields[a].data.owner = undefined;
             }
-            safeFarms[a] = {coordinate: fields[a].value.trim(), owner: owner};
+            safeFarms[a] = {coordinate: fields[a].value.trim(), owner: owner, priority: fields[a].priorityBox.checked};
         }
     }
     safeFarms.sort(
@@ -110,7 +119,7 @@ function restore() {
         if (safeFarms.length > 0) {
             if (safeFarms[0].constructor !== {}.constructor) { //Check if the first element is a JSON object
                 for (var a = 0; a < safeFarms.length; a++) {
-                    safeFarms[a] = {coordinate: safeFarms[a], owner: undefined};
+                    safeFarms[a] = {coordinate: safeFarms[a], owner: undefined, priority: false};
                 }
             }
             addRestoredData(safeFarms, missing, changedOwner, defaultFarmParty);        
@@ -125,21 +134,36 @@ function addRestoredData(safeFarms, missing, changedOwner, defaultFarmParty) {
 	console.log(defaultFarmParty);
     for (var a = 0; a < safeFarms.length; a++) {
 		if (safeFarms[a] != null) {
-		    var node = addExtraEntry('normal');
+            var node;
+            if (safeFarms[a].priority != undefined) {
+		        node = addExtraEntry('normal', safeFarms[a].priority);
+            } else {
+                node = addExtraEntry('normal', false);
+            }
 		    node.value = safeFarms[a].coordinate;
             node.data = {coordinate: safeFarms[a].coordinate, owner: safeFarms[a].owner};
 		}
     }
     for (var a = 0; a < missing.length; a++) {
 		if (missing[a] != null) {
-		    var node = addExtraEntry('missing');
+            var node;
+            if (missing[a].priority != undefined) {
+		        node = addExtraEntry('missing', missing[a].priority);
+            } else {
+                node = addExtraEntry('missing', false);
+            }
 		    node.value = missing[a].coordinate;
             node.data = {};
 		}
     }
     for (var a = 0; a < changedOwner.length; a++) {
 		if (changedOwner[a] != null) {
-		    var node = addExtraEntry('changed');
+            var node;
+            if (changedOwner[a].priority != undefined) {
+		        node = addExtraEntry('changed', changedOwner[a].priority);
+            } else {
+                node = addExtraEntry('changed', false);
+            }
 		    node.value = changedOwner[a].coordinate;
             node.data = {};
 		}

@@ -4,6 +4,7 @@ var defaultParty = {lc: "5"};
 var safeFarm = [];
 var missingVillages = []
 var changedOwner = [];
+var priorityVillages = [];
 var attacking = false;
 var farming = false;
 var haltLoop = false;
@@ -110,6 +111,12 @@ var start = function (running) {
         missingVillages = data.missing;
         changedOwner = data.changedOwner;
         defaultParty = data.defaultFarmParty;
+
+        for (var a = 0; a < safeFarm.length; a++) {
+            if (safeFarm[a].priority != undefined && safeFarm[a].priority === true) {
+                priorityVillages.push(safeFarm[a]);
+            }
+        }
         
         dataRetrieved(running);
     });
@@ -272,7 +279,7 @@ function checkRefreshRequired () {
         console.log('Checking ' + (6 - refreshTick) + ' more times.');
         if (refreshTick > 5) {
             console.log('Game has timed out, refreshing.');
-            reload();
+            reloadPage();
         } else {
             refreshTick++;
         }
@@ -310,13 +317,13 @@ var sendAttack = function (currentAttack, remainingAttempts) {
                 } else {
 					if (!stuck) {
     				    chrome.extension.sendMessage({text: 'setStuck', stuck: true}, undefined);
-                    	reload();
+                    	reloadPage();
 					} else {
                         console.log('Bot is stuck, cancelling attack attempt.');
 						setBackgroundData(false, true, undefined);
     				    chrome.extension.sendMessage({text: 'setStuck', stuck: false}, undefined);
 						if (cleanURL()) {
-                            reload();
+                            reloadPage();
                         }
 					}
                 }
@@ -325,7 +332,7 @@ var sendAttack = function (currentAttack, remainingAttempts) {
     } else {
         moveToAnotherList (currentAttack, missingVillages);
         setBackgroundData(false, true, undefined);
-        reload();
+        reloadPage();
     }
 };
 
@@ -334,34 +341,68 @@ function checkVillageMissing () {
     return (errorBox != undefined && errorBox.innerHTML.trim() === 'Target does not exist')
 }
 
-var randoAttempts;
-var selectFarm = function () {
-    var index = parseInt(Math.random() * safeFarm.length);
-    var currentAttack;
-    var currentAttackString;
+function selectFarm () {
     var tempIndex = 2;
-    //Check for current attack
+    
+    var priorityFarm = selectPriorityFarm();
+
+    if (priorityFarm != undefined) {
+        return priorityFarm;
+    } else {
+        return selectAnyFarm();
+    }
+};
+
+function selectAnyFarm () {
+    var index;
+    var randoAttempts = 0;
+    var maxAttempts = safeFarm.length * 2;
+
     while (true) {
-        currentAttack = document.querySelector('#content_value > table:nth-child(10) > tbody > tr:nth-child(' + tempIndex + ') > td:nth-child(1) > span.quickedit-out > span > a > span');
+        index = parseInt(Math.random() * priorityNotUnderAttack.length);
+        if (randoAttempts === maxAttempts;) {
+            return safeFarm[a].coordinate;
+        }
+
+        if (!alreadyAttackingFarm(safeFarm[a].coordinate) {
+            return safeFarm[a].coordinate;
+        }
+        randoAttempts++;
+    }
+}
+
+function selectPriorityFarm () {
+    var priorityNotUnderAttack = [];
+    for (var a = 0; a < priorityVillages.length; a++) {
+        if (!alreadyAttackingFarm()) {
+            priorityNotUnderAttack.push(priorityVillages[a]);
+        }
+    }
+
+    if (selectPriorityFarm.length > 0) {
+        var index = parseInt(Math.random() * priorityNotUnderAttack.length);
+        return priorityNotUnderAttack[index].coordinate;
+    } else {
+        return undefined;
+    }
+}
+
+function alreadyAttackingFarm (coordinates) {
+    var currentAttack;
+    var rowIndex = 2;
+    while (true) {
+        currentAttack = document.querySelector('#content_value > table:nth-child(10) > tbody > tr:nth-child(' + rowIndex + ') > td:nth-child(1) > span.quickedit-out > span > a > span');
         if (currentAttack != undefined) {
-            currentAttackString = currentAttack.innerHTML;
-            if (getSafeFarmIndex(currentAttackString) > -1) {
-                randoAttempts++;
-                if (randoAttempts > safeFarms.length * 2) {
-                    randoAttempts = 0;
-                    break;
-                }
-            } else {
-                randoAttempts = 0;
-                break;
+            currentAttack = currentAttack.innerHTML.split('(')[1].split(')')[0];
+            if (currentAttack === coordinates) {
+                return true;
             }
-            tempIndex++;
         } else {
             break;
         }
     }
-    return safeFarm[index];
-};
+    return false;
+}
 
 function getSafeFarmIndex (coordinate) {
     for (var a = 0; a < safeFarm.length; a++) {
@@ -377,16 +418,16 @@ function botCheckCheck () {
     return botCheckInput != undefined;
 }
 
-function reload () {
+function reloadPage () {
     window.onbeforeunload = function () {};
     window.onunload = function () {};
-    setTimeout(location.reload, 1000);
+    setTimeout(function () {location.reload()}, 1000);
 }
 
 window.setTimeout(function () {
     if (!windowLoaded) {
         console.log('Page failed to load after 20 seconds, refreshing.');
-        reload();
+        reloadPage();
     }
 }, 20000);
 
