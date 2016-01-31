@@ -184,7 +184,6 @@ var verifyAndFarm = function () {
     if (unitsAvailable()) {
         enterDefaultUnits();
 
-        randoAttempts = 0;
         var selectedFarm = selectFarm();
         inputFarm(selectedFarm.coordinate);
         console.log('Attacking: ' + selectedFarm.coordinate);
@@ -347,11 +346,15 @@ function checkVillageMissing () {
 }
 
 function selectFarm () {
+    console.log('Selecting a farm.');
     var tempIndex = 2;
     
     var priorityFarm = selectPriorityFarm();
 
+    console.log(priorityFarm);
+
     if (priorityFarm != undefined) {
+        console.log('Priority farm available - sending attack to it.');
         return priorityFarm;
     } else {
         return selectAnyFarm();
@@ -364,13 +367,13 @@ function selectAnyFarm () {
     var maxAttempts = safeFarm.length * 2;
 
     while (true) {
-        index = parseInt(Math.random() * priorityNotUnderAttack.length);
-        if (randoAttempts === maxAttempts;) {
-            return safeFarm[a].coordinate;
+        index = parseInt(Math.random() * safeFarm.length);
+        if (randoAttempts == maxAttempts) {
+            return safeFarm[index];
         }
 
-        if (!alreadyAttackingFarm(safeFarm[a].coordinate) {
-            return safeFarm[a].coordinate;
+        if (!alreadyAttackingFarm(safeFarm[index].coordinate)) {
+            return safeFarm[index];
         }
         randoAttempts++;
     }
@@ -379,14 +382,14 @@ function selectAnyFarm () {
 function selectPriorityFarm () {
     var priorityNotUnderAttack = [];
     for (var a = 0; a < priorityVillages.length; a++) {
-        if (!alreadyAttackingFarm()) {
+        if (!alreadyAttackingFarm(priorityVillages[a].coordinate)) {
             priorityNotUnderAttack.push(priorityVillages[a]);
         }
     }
 
-    if (selectPriorityFarm.length > 0) {
+    if (priorityNotUnderAttack.length > 0) {
         var index = parseInt(Math.random() * priorityNotUnderAttack.length);
-        return priorityNotUnderAttack[index].coordinate;
+        return priorityNotUnderAttack[index];
     } else {
         return undefined;
     }
@@ -405,6 +408,7 @@ function alreadyAttackingFarm (coordinates) {
         } else {
             break;
         }
+        rowIndex++;
     }
     return false;
 }
