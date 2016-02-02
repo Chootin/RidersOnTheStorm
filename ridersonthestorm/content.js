@@ -298,7 +298,6 @@ function checkRefreshRequired () {
         console.log('Checking ' + (6 - refreshTick) + ' more times.');
         if (refreshTick > 5) {
             console.log('Game has timed out, refreshing.');
-            stuck();
             reloadPage();
             return true;
         } else {
