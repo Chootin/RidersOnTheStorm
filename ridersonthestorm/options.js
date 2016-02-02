@@ -97,11 +97,24 @@ function save() {
     var defaultFarmParty = {};
     var defaultFarmInputs = document.getElementById('defaultFarm').childNodes;
     for (var a = 0; a < defaultFarmInputs.length; a++) {
-        key = defaultFarmInputs[a].id;
-        defaultFarmParty[key] = defaultFarmInputs[a].value;
+        key = defaultFarmInputs[a].className;
+        if (key != undefined) {
+            defaultFarmParty[key] = defaultFarmInputs[a].value;
+        }
     }
 
-    chrome.storage.sync.set({safeFarms: safeFarms, missing: [], changedOwner: [], defaultFarmParty: defaultFarmParty}, function() {
+    var priorityFarmParty = {};
+    var priorityFarmInputs = document.getElementById('priorityFarm').childNodes;
+    for (var a = 0; a < priorityFarmInputs.length; a++) {
+        key = priorityFarmInputs[a].className;
+        if (key != undefined && key != '') {
+            priorityFarmParty[key] = priorityFarmInputs[a].value;
+        }
+    }
+
+    console.log(priorityFarmParty);
+
+    chrome.storage.sync.set({safeFarms: safeFarms, missing: [], changedOwner: [], defaultFarmParty: defaultFarmParty, priorityFarmParty: priorityFarmParty}, function() {
         var d = new Date();
         var confirmNode = document.getElementById('status');
         confirmNode.innerHTML = 'Save completed at ' + d.getHours() + ':' + d.getMinutes() + '.';
@@ -110,11 +123,14 @@ function save() {
 }
 
 function restore() {
-    chrome.storage.sync.get({safeFarms: [], changedOwner: [], missing: [], defaultFarmParty: {lc: 5}}, function(data) {
+    chrome.storage.sync.get({safeFarms: [], changedOwner: [], missing: [], defaultFarmParty: {lc: 5}, priorityFarmParty: {lc: 5}}, function(data) {
         var safeFarms = data.safeFarms;
         var changedOwner = data.changedOwner;
         var missing = data.missing;
         var defaultFarmParty = data.defaultFarmParty;
+        var priorityFarmParty = data.priorityFarmParty;
+
+        console.log(data.priorityFarmParty);
 
         if (safeFarms.length > 0) {
             if (safeFarms[0].constructor !== {}.constructor) { //Check if the first element is a JSON object
@@ -122,12 +138,12 @@ function restore() {
                     safeFarms[a] = {coordinate: safeFarms[a], owner: undefined, priority: false};
                 }
             }
-            addRestoredData(safeFarms, missing, changedOwner, defaultFarmParty);        
+            addRestoredData(safeFarms, missing, changedOwner, defaultFarmParty, priorityFarmParty);        
         }
     });
 }
 
-function addRestoredData(safeFarms, missing, changedOwner, defaultFarmParty) {
+function addRestoredData(safeFarms, missing, changedOwner, defaultFarmParty, priorityFarmParty) {
 	console.log(safeFarms);
 	console.log(missing);
 	console.log(changedOwner);
@@ -168,8 +184,16 @@ function addRestoredData(safeFarms, missing, changedOwner, defaultFarmParty) {
             node.data = {};
 		}
     }
-    var key;
+
+    var defaultFarmDiv = document.getElementById('defaultFarm');
+
     for (var key in defaultFarmParty) {
-        document.getElementById(key).value = defaultFarmParty[key];
+        defaultFarmDiv.getElementsByClassName(key)[0].value = defaultFarmParty[key];
+    }
+
+    var priorityFarmDiv = document.getElementById('priorityFarm');
+
+    for (var key in priorityFarmParty) {
+        priorityFarmDiv.getElementsByClassName(key)[0].value = priorityFarmParty[key];
     }
 }

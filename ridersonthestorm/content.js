@@ -1,6 +1,7 @@
 "use strict";
 
 var defaultParty = {lc: "5"};
+var priorityParty = {lc: "5"};
 var safeFarm = [];
 var missingVillages = []
 var changedOwner = [];
@@ -8,6 +9,7 @@ var priorityVillages = [];
 var attacking = false;
 var farming = false;
 var haltLoop = false;
+var stuck = false;
 
 var windowLoaded;
 
@@ -106,11 +108,12 @@ var setBackgroundData = function (attackValue, farmingValue, village) {
 };
 
 var start = function (running) {
-    chrome.storage.sync.get({safeFarms: [], changedOwner: [], missing: [], defaultFarmParty: {lc: 5}}, function (data) {
+    chrome.storage.sync.get({safeFarms: [], changedOwner: [], missing: [], defaultFarmParty: {lc: 5}, priorityFarmParty: {lc: 5}}, function (data) {
         safeFarm = data.safeFarms;
         missingVillages = data.missing;
         changedOwner = data.changedOwner;
         defaultParty = data.defaultFarmParty;
+        priorityParty = data.priorityFarmParty;
         generatePriorityFarmList();
         
         dataRetrieved(running);
@@ -179,46 +182,51 @@ function disconnect () {
 }
 
 var verifyAndFarm = function () {
-    checkRefreshRequired();
+    if (!checkRefreshRequired()) {
+        if (unitsAvailable()) {
+            var selectedFarm = selectFarm();
+            inputFarm(selectedFarm.farm.coordinate);
+            console.log('Attacking: ' + selectedFarm.farm.coordinate);
 
-    if (unitsAvailable()) {
-        enterDefaultUnits();
+            enterDefaultUnits(selectedFarm.priority);
 
-        var selectedFarm = selectFarm();
-        inputFarm(selectedFarm.coordinate);
-        console.log('Attacking: ' + selectedFarm.coordinate);
+            setBackgroundData(true, true, selectedFarm.farm.coordinate);
+            clickAttack();
+            attacking = true;
+        }
 
-        setBackgroundData(true, true, selectedFarm.coordinate);
-        clickAttack();
-        attacking = true;
+        window.setTimeout(loop, 1000);
     }
-
-    window.setTimeout(loop, 1000);
 };
 
-function unitsAvailable() {
+function unitsAvailable (priority) {
     //defaultParty
+    var party = defaultParty;
 
-    if (defaultParty.lc != undefined && defaultParty.lc.trim() != '') {
-        if (getQuantityOfUnitsAvailable('units_entry_all_light') < defaultParty.lc) {
+    if (priority == true) {
+        party = priorityParty;
+    }
+
+    if (party.lc != undefined && party.lc.trim() != '') {
+        if (getQuantityOfUnitsAvailable('units_entry_all_light') < party.lc) {
             return false;
         }
     }
 
-    if (defaultParty.hc != undefined && defaultParty.hc.trim() != '') {
-        if (getQuantityOfUnitsAvailable('units_entry_all_heavy') < defaultParty.hc) {
+    if (party.hc != undefined && party.hc.trim() != '') {
+        if (getQuantityOfUnitsAvailable('units_entry_all_heavy') < party.hc) {
             return false;
         }
     }
 
-    if (defaultParty.ma != undefined && defaultParty.ma.trim() != '') {
-        if (getQuantityOfUnitsAvailable('units_entry_all_marcher') < defaultParty.ma) {
+    if (party.ma != undefined && party.ma.trim() != '') {
+        if (getQuantityOfUnitsAvailable('units_entry_all_marcher') < party.ma) {
             return false;
         }
     }
 
-    if (defaultParty.ms != undefined && defaultParty.ms.trim() != '') {
-        if (getQuantityOfUnitsAvailable('units_entry_all_spy') < defaultParty.ms) {
+    if (party.ms != undefined && party.ms.trim() != '') {
+        if (getQuantityOfUnitsAvailable('units_entry_all_spy') < party.ms) {
             return false;
         }
     }
@@ -235,11 +243,18 @@ function getQuantityOfUnitsAvailable (id) {
     return 0;    
 }
 
-function enterDefaultUnits () {
-    enterUnits('unit_input_light', defaultParty.lc);
-    enterUnits('unit_input_heavy', defaultParty.hc);
-    enterUnits('unit_input_marcher', defaultParty.ma);
-    enterUnits('unit_input_spy', defaultParty.ms);
+function enterDefaultUnits (priority) { //TODO: check if priority party is possible
+    if (priority && unitsAvailable(true)) {
+        enterUnits('unit_input_light', priorityParty.lc);
+        enterUnits('unit_input_heavy', priorityParty.hc);
+        enterUnits('unit_input_marcher', priorityParty.ma);
+        enterUnits('unit_input_spy', priorityParty.ms);
+    } else {
+        enterUnits('unit_input_light', defaultParty.lc);
+        enterUnits('unit_input_heavy', defaultParty.hc);
+        enterUnits('unit_input_marcher', defaultParty.ma);
+        enterUnits('unit_input_spy', defaultParty.ms);
+    }
 }
 
 function enterUnits (id, number) {
@@ -283,15 +298,17 @@ function checkRefreshRequired () {
         console.log('Checking ' + (6 - refreshTick) + ' more times.');
         if (refreshTick > 5) {
             console.log('Game has timed out, refreshing.');
+            stuck();
             reloadPage();
+            return true;
         } else {
             refreshTick++;
+            return false;
         }
     }
 }
 
-var stuck = false;
-var sendAttack = function (currentAttack, remainingAttempts) {
+function sendAttack (currentAttack, remainingAttempts) {
     var stop = false;
 	chrome.extension.sendMessage({text: 'getStuck'}, function (response) {stuck = response});
     if (!checkVillageMissing()) {
@@ -351,13 +368,11 @@ function selectFarm () {
     
     var priorityFarm = selectPriorityFarm();
 
-    console.log(priorityFarm);
-
     if (priorityFarm != undefined) {
         console.log('Priority farm available - sending attack to it.');
-        return priorityFarm;
+        return {farm: priorityFarm, priority: true};
     } else {
-        return selectAnyFarm();
+        return {farm: selectAnyFarm(), priority: false};
     }
 };
 
