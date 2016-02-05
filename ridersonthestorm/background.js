@@ -12,6 +12,7 @@ var stuck = false;
 
 chrome.extension.onMessage.addListener(function (message, sender, sendResponse) {
     if (message.text === 'alreadyRunning') {
+		console.log(farmTabId, sender.tab.id);
         var runningOnAnotherTab = (farmTabId != undefined && sender.tab.id != farmTabId);
         sendResponse({runningElsewhere: runningOnAnotherTab});
     } else if (message.text === 'getData') {
@@ -29,6 +30,10 @@ chrome.extension.onMessage.addListener(function (message, sender, sendResponse) 
         farmTabId = undefined;
         isAttacking = false;
         isFarming = false;
+		currentAttack = undefined;
+		scanRunning = false;
+		stuck = false;
+		scanIndex = 0;
         setActionTitle(sender.tab.id);
     } else if (message.text === 'scanIndex') {
         sendResponse(scanIndex);

@@ -1,5 +1,6 @@
 "use strict";
 
+var isFarmTab = false;
 var defaultParty = {lc: "5"};
 var priorityParty = {lc: "5"};
 var safeFarm = [];
@@ -17,6 +18,7 @@ function cleanURL() {
     var url = window.location.href.split('&try')[0];
     var alreadyThere = window.location.href == url;
     if (!alreadyThere) {
+		cleanEndListeners();
         window.location.href = url;
     }
     return alreadyThere;
@@ -52,6 +54,7 @@ function scanVillageOwners (index) { //Types the coord into the box and hits the
 
             var lc_input = document.getElementById('unit_input_light');
             lc_input.value = 1;
+			cleanEndListeners();
             clickAttack();
         } else if (safeFarm[index].owner != undefined) {
             chrome.extension.sendMessage({text: 'incScanIndex'}, undefined);
@@ -81,19 +84,28 @@ function storeData () {
 function beginLoop () {
     if (!attacking) {
         farming = true;
-        window.onbeforeunload = function (e) {
-            if (farming) {
-                return 'This is your farm tab, are you sure you want to leave?';
-            }
-        };
-
-        window.onunload = function () {
-            if (farming) {
-                disconnect();
-            }
-        }
-
+		setupEndListeners();
         loop();
+    }
+}
+
+function cleanEndListeners () {
+    window.onbeforeunload = function () {};
+
+    window.onunload = function () {}
+}
+
+function setupEndListeners () {
+    window.onbeforeunload = function (e) {
+        if (isFarmTab) {
+            return 'This is your farm tab, are you sure you want to leave?';
+        }
+    };
+
+    window.onunload = function () {
+        if (isFarmTab) {
+            disconnect();
+        }
     }
 }
 
@@ -108,18 +120,21 @@ var setBackgroundData = function (attackValue, farmingValue, village) {
 };
 
 var start = function (running) {
-    chrome.storage.sync.get({safeFarms: [], changedOwner: [], missing: [], defaultFarmParty: {lc: 5}, priorityFarmParty: {lc: 5}}, function (data) {
-        safeFarm = data.safeFarms;
-        missingVillages = data.missing;
-        changedOwner = data.changedOwner;
-        defaultParty = data.defaultFarmParty;
-        priorityParty = data.priorityFarmParty;
-        generatePriorityFarmList();
-        
-        dataRetrieved(running);
-    });
-
-    
+	if (!running.runningElsewhere) {
+		isFarmTab = true;
+		chrome.storage.sync.get({safeFarms: [], changedOwner: [], missing: [], defaultFarmParty: {lc: 5}, priorityFarmParty: {lc: 5}}, function (data) {
+		    safeFarm = data.safeFarms;
+		    missingVillages = data.missing;
+		    changedOwner = data.changedOwner;
+		    defaultParty = data.defaultFarmParty;
+		    priorityParty = data.priorityFarmParty;
+		    generatePriorityFarmList();
+		    
+		    dataRetrieved();
+		});
+	} else {
+        console.log('TribalWarsFarmer: Detected to be running in another tab.');
+    }
 };
 
 function generatePriorityFarmList () {
@@ -130,45 +145,43 @@ function generatePriorityFarmList () {
     }
 }
 
-function dataRetrieved (running) {
-    if (!running.runningElsewhere) {
-        chrome.extension.sendMessage({text: 'showAction'}, undefined);
+function dataRetrieved () {
+    chrome.extension.sendMessage({text: 'showAction'}, undefined);
 
-        chrome.runtime.onMessage.addListener(function (message, sender, callback) {
-            if (message.text === 'start') {
-                if (safeFarm.length > 0) {
-                    alert('Tribal Wars farm bot started!');
-                    console.log('Starting owner scan!');
-                    if (cleanURL()) {
-                        chrome.extension.sendMessage({text: 'scanIndex'}, scanVillageOwners);
-                    }
-                } else {
-					notEnoughFarms();
+    chrome.runtime.onMessage.addListener(function (message, sender, callback) {
+        if (message.text === 'start') {
+            if (safeFarm.length > 0) {
+                alert('Tribal Wars farm bot started!');
+				setupEndListeners();
+				isFarmTab = true;
+                console.log('Starting owner scan!');
+                if (cleanURL()) {
+                    chrome.extension.sendMessage({text: 'scanIndex'}, scanVillageOwners);
                 }
-            } else if (message.text === 'stop') {
-                alert('Tribal Wars farm bot stopped.');
-                farming = false;
-                disconnect();
-            }
-        });
-
-        chrome.extension.sendMessage({text: 'getData'}, function (response) {
-            attacking = response.attacking;
-            farming = response.farming;
-            if (response.scanRunning) {
-                console.log('Continuing scan...');
-                chrome.extension.sendMessage({text: 'scanIndex'}, scanVillageOwners);
             } else {
-                if (farming && !attacking) {
-                    beginLoop();
-                } else if (attacking) {
-                    window.setTimeout(function () {sendAttack(response.village, 5)}, 1000);
-                }
+				notEnoughFarms();
             }
-        });
-    } else {
-        console.log('TribalWarsFarmer: Detected to be running in another tab.');
-    }
+        } else if (message.text === 'stop') {
+            alert('Tribal Wars farm bot stopped.');
+            farming = false;
+            disconnect();
+        }
+    });
+
+    chrome.extension.sendMessage({text: 'getData'}, function (response) {
+        attacking = response.attacking;
+        farming = response.farming;
+        if (response.scanRunning) {
+            console.log('Continuing scan...');
+            chrome.extension.sendMessage({text: 'scanIndex'}, scanVillageOwners);
+        } else {
+            if (farming && !attacking) {
+                beginLoop();
+            } else if (attacking) {
+                window.setTimeout(function () {sendAttack(response.village, 5)}, 1000);
+            }
+        }
+    });
 }
 
 function notEnoughFarms () {
@@ -263,8 +276,7 @@ function enterUnits (id, number) {
 }
 
 function clickAttack () {
-    window.onbeforeunload = function () {};
-    window.onunload = function () {};
+	cleanEndListeners();
     document.getElementById('target_attack').click();
 }
 
@@ -442,8 +454,7 @@ function botCheckCheck () {
 }
 
 function reloadPage () {
-    window.onbeforeunload = function () {};
-    window.onunload = function () {};
+	cleanEndListeners();
     setTimeout(function () {location.reload()}, 1000);
 }
 
