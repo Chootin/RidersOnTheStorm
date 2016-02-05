@@ -28,7 +28,7 @@ function scanVillageOwners (index) { //Types the coord into the box and hits the
 
         var confirmAttackList = document.getElementsByClassName('troop_confirm_go');
         if (confirmAttackList.length > 0) { //We are already scanning
-            var tempOwner = 'barbarian';
+            var tempOwner = '';
 
             var owner = document.querySelector('#command-data-form > table:nth-child(8) > tbody > tr:nth-child(3) > td:nth-child(2) > a');
             if (owner != undefined) {
@@ -315,7 +315,7 @@ function sendAttack (currentAttack, remainingAttempts) {
         if (owner != undefined) {
             owner = owner.innerHTML.trim();
         }
-        if (owner != undefined && owner != safeFarm[getSafeFarmIndex(currentAttack)].owner) {
+        if (owner != undefined && owner != '' && owner != '---' && owner != safeFarm[getSafeFarmIndex(currentAttack)].owner) {
             //BAD Owner has changed!
             console.log('Village owned by: ' + owner + ' has changed owner to: ' + safeFarm[getSafeFarmIndex(currentAttack)].owner);
             moveToAnotherList(currentAttack, changedOwner);

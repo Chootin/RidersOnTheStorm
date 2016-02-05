@@ -42,7 +42,13 @@ function addExtraEntry(status, priority) {
     listDiv.appendChild(priorityBox);
     listDiv.appendChild(inputNode);
     listDiv.appendChild(buttonNode);
-    listDiv.appendChild(warningText);
+
+	if (status === 'changed' || status === 'missing') {
+    	listDiv.appendChild(warningText);
+		inputNode.status = true;
+	} else {
+		inputNode.status = false;
+	}
 
     inputNode.data = {};
     inputNode.priorityBox = priorityBox;
@@ -71,12 +77,14 @@ function save() {
     for (var a = 0; a < fields.length; a++) {
         if (fields[a].value.trim() != '') {
             var owner = undefined;
-            if (fields[a].data.coordinate === fields[a].value.trim()) {
-                console.log('Preserving old owner information of: ' + fields[a].value + ' ' + fields[a].data.owner);
-                owner = fields[a].data.owner;
-            } else {
-                fields[a].data.owner = undefined;
-            }
+			if (fields[a].status != true) {
+		        if (fields[a].data.coordinate === fields[a].value.trim()) {
+		            console.log('Preserving old owner information of: ' + fields[a].value + ' ' + fields[a].data.owner);
+		            owner = fields[a].data.owner;
+		        } else {
+		            fields[a].data.owner = undefined;
+		        }
+			}
             safeFarms[a] = {coordinate: fields[a].value.trim(), owner: owner, priority: fields[a].priorityBox.checked};
         }
     }
@@ -114,7 +122,11 @@ function save() {
 
     console.log(priorityFarmParty);
 
-    chrome.storage.sync.set({safeFarms: safeFarms, missing: [], changedOwner: [], defaultFarmParty: defaultFarmParty, priorityFarmParty: priorityFarmParty}, function() {
+	var saveJSON = {safeFarms: safeFarms, missing: [], changedOwner: [], defaultFarmParty: defaultFarmParty, priorityFarmParty: priorityFarmParty};
+
+	console.log(saveJSON);
+
+    chrome.storage.sync.set(saveJSON, function() {
         var d = new Date();
         var confirmNode = document.getElementById('status');
         confirmNode.innerHTML = 'Save completed at ' + d.getHours() + ':' + d.getMinutes() + '.';
