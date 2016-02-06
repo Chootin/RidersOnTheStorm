@@ -448,11 +448,6 @@ function getSafeFarmIndex (coordinate) {
     return -1;
 }
 
-function botCheckCheck () {
-    var botCheckInput = document.getElementById('bot_check_code');
-    return botCheckInput != undefined;
-}
-
 function reloadPage () {
 	cleanEndListeners();
     setTimeout(function () {location.reload()}, 1000);
@@ -465,9 +460,20 @@ window.setTimeout(function () {
     }
 }, 20000);
 
+function botCheckCheck () {
+    var botCheck = document.getElementById('bot_check');
+    if (botCheck != undefined) {
+        window.setTimeout(botCheckCheck, 1000);
+    } else {
+        getRunning();
+    }
+}
+
+function getRunning () {
+    chrome.extension.sendMessage({text: 'alreadyRunning'}, start);
+}
+
 window.onload = function () {
     windowLoaded = true;
-    if (!botCheckCheck()) {
-        chrome.extension.sendMessage({text: 'alreadyRunning'}, start);
-    }
+    botCheckCheck();
 };
