@@ -3,10 +3,13 @@
 var counter = 0;
 var totalCount = 0;
 
+var allDeleteButtons = [];
+
 window.onload = function() {
     restore();
     document.getElementById('add').onclick = addExtraEntry;
     document.getElementById('save').onclick = save;
+    document.getElementById('fileUpload').onchange = upload;
 };
 
 function addExtraEntry(status, priority) {
@@ -29,11 +32,14 @@ function addExtraEntry(status, priority) {
     priorityBox.type = 'checkbox';
     buttonNode.innerHTML = 'Remove';
     buttonNode.onclick = function() {
-        listDiv.removeChild(priorityBox);
-        listDiv.removeChild(inputNode);
-        listDiv.removeChild(buttonNode);
-        listDiv.removeChild(warningText);
+        console.log('Removing row');
         listDiv.removeChild(br);
+        if (status === 'changed' || status === 'missing') {
+            listDiv.removeChild(warningText);
+        }
+        listDiv.removeChild(priorityBox);
+        listDiv.removeChild(buttonNode);
+        listDiv.removeChild(inputNode);
         totalCount--;
         updateQuantity();
     }
@@ -42,6 +48,8 @@ function addExtraEntry(status, priority) {
     listDiv.appendChild(priorityBox);
     listDiv.appendChild(inputNode);
     listDiv.appendChild(buttonNode);
+
+    allDeleteButtons.push(buttonNode);
 
 	if (status === 'changed' || status === 'missing') {
     	listDiv.appendChild(warningText);
@@ -120,11 +128,9 @@ function save() {
         }
     }
 
-    console.log(priorityFarmParty);
-
 	var saveJSON = {safeFarms: safeFarms, missing: [], changedOwner: [], defaultFarmParty: defaultFarmParty, priorityFarmParty: priorityFarmParty};
 
-	console.log(saveJSON);
+    backup(saveJSON);
 
     chrome.storage.sync.set(saveJSON, function() {
         var d = new Date();
@@ -135,7 +141,11 @@ function save() {
 }
 
 function restore() {
-    chrome.storage.sync.get({safeFarms: [], changedOwner: [], missing: [], defaultFarmParty: {lc: 5}, priorityFarmParty: {lc: 5}}, function(data) {
+    chrome.storage.sync.get({safeFarms: [], changedOwner: [], missing: [], defaultFarmParty: {lc: 5}, priorityFarmParty: {lc: 5}}, restoreJSON);
+}
+
+function restoreJSON(data) {
+        backup(data);
         var safeFarms = data.safeFarms;
         var changedOwner = data.changedOwner;
         var missing = data.missing;
@@ -152,7 +162,6 @@ function restore() {
             }
             addRestoredData(safeFarms, missing, changedOwner, defaultFarmParty, priorityFarmParty);        
         }
-    });
 }
 
 function addRestoredData(safeFarms, missing, changedOwner, defaultFarmParty, priorityFarmParty) {
@@ -160,6 +169,9 @@ function addRestoredData(safeFarms, missing, changedOwner, defaultFarmParty, pri
 	console.log(missing);
 	console.log(changedOwner);
 	console.log(defaultFarmParty);
+
+    deleteAll();
+
     for (var a = 0; a < safeFarms.length; a++) {
 		if (safeFarms[a] != null) {
             var node;
@@ -207,5 +219,47 @@ function addRestoredData(safeFarms, missing, changedOwner, defaultFarmParty, pri
 
     for (var key in priorityFarmParty) {
         priorityFarmDiv.getElementsByClassName(key)[0].value = priorityFarmParty[key];
+    }
+}
+
+function deleteAll() {
+    for (var a = allDeleteButtons.length - 1; a >= 0; a--) {
+        try {
+            allDeleteButtons[a].onclick();
+        } catch (e) {
+            console.log('Orphaned reference ignored.');
+        }
+    }
+    allDeleteButtons = [];
+}
+
+function backup (data) {
+    var data = "text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+
+    var downloadLink = document.getElementById('downloadLink');
+
+    if (downloadLink != undefined) {
+        downloadLink.href = 'data:' + data;
+    } else {
+        var a = document.createElement('a');
+        a.href = 'data:' + data;
+        a.download = 'rots_backup.json';
+        a.innerHTML = 'Download Backup';
+        a.id = 'downloadLink';
+
+        var container = document.getElementById('backupDiv');
+        container.appendChild(a);
+    }
+}
+
+function upload (e) {
+    var file = e.target.files;
+    if (file.length > 0) {
+        file = e.target.files[0];
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            restoreJSON(JSON.parse(e.target.result));
+        }
+        reader.readAsText(file);
     }
 }
