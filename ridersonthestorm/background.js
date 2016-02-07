@@ -34,7 +34,7 @@ chrome.extension.onMessage.addListener(function (message, sender, sendResponse) 
 		scanRunning = false;
 		stuck = false;
 		scanIndex = 0;
-        setActionTitle(sender.tab.id);
+        setActionTitle();
     } else if (message.text === 'scanIndex') {
         sendResponse(scanIndex);
     } else if (message.text === 'incScanIndex') {
@@ -68,11 +68,17 @@ chrome.pageAction.onClicked.addListener(function (tab) {
 });
 
 var setActionTitle = function (tabId) {
-    if (isFarming) {
-        chrome.pageAction.setTitle({tabId: tabId, title: 'Disable Tribal Wars Farmer'});
-        chrome.pageAction.setIcon({tabId: tabId, path: 'farm_assistent_active.png'});
+    var tab;
+    if (tabId != undefined || farmTabId == undefined) {
+        tab = tabId;
     } else {
-        chrome.pageAction.setTitle({tabId: tabId, title: 'Enable Tribal Wars Farmer'});
-        chrome.pageAction.setIcon({tabId: tabId, path: 'farm_assistent_inactive.png'});
+        tab = farmTabId;
+    }
+    if (isFarming) {
+            chrome.pageAction.setTitle({tabId: tab, title: 'Disable Tribal Wars Farmer'});
+            chrome.pageAction.setIcon({tabId: tab, path: 'farm_assistent_active.png'});
+    } else {
+        chrome.pageAction.setTitle({tabId: tab, title: 'Enable Tribal Wars Farmer'});
+        chrome.pageAction.setIcon({tabId: tab, path: 'farm_assistent_inactive.png'});
     }
 };

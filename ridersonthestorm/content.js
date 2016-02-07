@@ -49,8 +49,7 @@ function scanVillageOwners (index) { //Types the coord into the box and hits the
             cleanURL();
         } else if (safeFarm[index].owner == undefined) {
             inputFarm(safeFarm[index].coordinate);
-            window.onbeforeonunload = undefined;
-            window.onunload = undefined;
+            cleanEndListeners();
 
             var lc_input = document.getElementById('unit_input_light');
             lc_input.value = 1;
@@ -164,6 +163,7 @@ function dataRetrieved () {
         } else if (message.text === 'stop') {
             alert('Tribal Wars farm bot stopped.');
             farming = false;
+            cleanEndListeners();
             disconnect();
         }
     });
@@ -426,7 +426,7 @@ function alreadyAttackingFarm (coordinates) {
     var rowIndex = 2;
     while (true) {
         currentAttack = document.querySelector('#content_value > table:nth-child(10) > tbody > tr:nth-child(' + rowIndex + ') > td:nth-child(1) > span.quickedit-out > span > a > span');
-        if (currentAttack != undefined) {
+        if (currentAttack != undefined && currentAttack.innerHTML.indexOf('(') > -1) {
             currentAttack = currentAttack.innerHTML.split('(')[1].split(')')[0];
             if (currentAttack === coordinates) {
                 return true;
