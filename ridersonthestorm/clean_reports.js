@@ -4,28 +4,61 @@ var cleanReportsButton;
 var purgeReportsButton;
 var reportTable;
 
+var page;
+
 window.onload = function () {
     chrome.extension.sendMessage({text: 'getPurgeData'}, purge);
 }
 
-function purge (purging, page) {
-    console.log(purging + ' ' + page);
+function purge (data) {
+	var purging = data.purge;
+	page = data.newPage;
     if (purging) {
         setupEndListeners();
-        var thisPage = getPage();
-        if (thisPage == page) {
-            var numberSelected = clean();
-            if (numberSelected > 0) {
-                pressDelete();
-            } else {
-                chrome.extension.sendMessage({text: 'purge', value: true, page: thisPage + 1}, undefined);
-            }
-        } else {
-            cleanEndListeners();
-            window.location.href(getURL(page));
-        }
+		purgeEnded();
     } else {
         firstRun();
+    }
+}
+
+function purgeEnded () {
+	var pageNumber = document.querySelector('#content_value > table > tbody > tr > td:nth-child(2) > table > tbody > tr:nth-child(2) > td > strong');
+	if (pageNumber.innerHTML.trim() == '&gt;1&lt;') {
+    	chrome.extension.sendMessage({text: 'getPurgeStuck'}, checkPurgeStuck);
+	} else {
+		chrome.extension.sendMessage({text: 'purgeStuck', value: false}, undefined);
+		window.setTimeout(function () {processDelete(page)}, 2000);
+	}
+}
+
+function checkPurgeStuck (stuck) {
+	if (!stuck.purgeStuck) {
+		chrome.extension.sendMessage({text: 'purgeStuck', value: true}, undefined);
+		window.setTimeout(function () {processDelete(page)}, 2000);
+	} else {
+		chrome.extension.sendMessage({text: 'purge', value: false, nextPage: 0}, undefined);
+		chrome.extension.sendMessage({text: 'purgeStuck', value: false}, undefined);
+		cleanEndListeners();
+	}
+}
+
+function processDelete (page) {
+    var thisPage = getPage();
+    if (thisPage == page) {
+        var numberSelected = clean();
+        if (numberSelected > 0) {
+            chrome.extension.sendMessage({text: 'purge', value: true, nextPage: (parseInt(thisPage))}, undefined);
+			chrome.extension.sendMessage({text: 'purgeStuck', value: false});
+            pressDelete();
+        } else {
+        	cleanEndListeners();
+            chrome.extension.sendMessage({text: 'purge', value: true, nextPage: (parseInt(thisPage) + 1)}, undefined);
+        	window.location.href = getURL(parseInt(thisPage) + 1);
+        }
+    } else {
+        cleanEndListeners();
+		var newUrl = getURL(parseInt(page));
+        window.location.href = newUrl;
     }
 }
 
@@ -41,23 +74,34 @@ function setupEndListeners () {
     };
 
     window.onunload = function () {
-        console.log('oops');
         chrome.extension.sendMessage({text: 'purge', value: false, page: 0}, undefined);
     }
 }
 
 function getURL (page) {
     var url = window.location.href;
-    var splitURL = url.split('&');
-    var baseURL = splitURL[0] + '&' + splitURL[1] + '&' + 'from=' + page * pageSize;
+	var splitURL = url.split('from=');
+	var newPage = parseInt(page) * parseInt(pageSize);
+	var from = splitURL.length == 1 ? '&from=' : 'from=';
+	var newUrl = splitURL[0] + from + newPage;
+    return newUrl;
 }
 
 function getPage () {
-    var urlSplit = window.location.href.split('from=');
-    if (urlSplit.length > 1) {
-        return parseInt(urlSplit[1]) / pageSize; 
-    }
-    return 0;
+    var url = window.location.href;
+	var index = url.indexOf('from=');
+	if (index > -1) {
+		index += 5;
+		var numeral = '0';
+		var c = parseInt(url.charAt(index));
+		while (!isNaN(c)) {
+			numeral += c;
+			index++;
+			c = parseInt(url.charAt(index));
+		}
+		return parseInt(numeral) / pageSize;
+	}
+	return 0;
 }
 
 function firstRun () {
@@ -80,7 +124,7 @@ function createButtons () {
     purgeReportsButton.className = 'btn btn-cancel';
     purgeReportsButton.type = 'button';
     purgeReportsButton.value = 'Purge';
-    purgeReportsButton.onclick = function () {purge(true, 0);};
+    purgeReportsButton.onclick = function () {purge({purge: true, newPage: 0});};
 }
 
 function clean () {
