@@ -8,6 +8,9 @@ var currentAttack;
 var scanIndex = 0;
 var scanRunning = false;
 
+var purging = false;
+var page = 0;
+
 var stuck = false;
 
 chrome.extension.onMessage.addListener(function (message, sender, sendResponse) {
@@ -47,7 +50,15 @@ chrome.extension.onMessage.addListener(function (message, sender, sendResponse) 
 		stuck = message.stuck;
 	} else if (message.text === 'getStuck') {
 		sendResponse(stuck);
-	}
+	} else if (message.text === 'purge') {
+        console.log(message);
+        purging = message.value;
+        page = message.nextPage;
+        console.log(purging, page);
+    } else if (message.text === 'getPurgeData') {
+        console.log(purging, page);
+        sendResponse(purging, page);
+    }
 });
 
 chrome.pageAction.onClicked.addListener(function (tab) {
