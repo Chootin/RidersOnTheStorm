@@ -24,6 +24,12 @@
                 "https://*.tribalwars.net/game.php?*screen=map*"
             ],
             "js": ["map.js"]
+        },
+        {
+            "matches": [
+                "https://*.tribalwars.net/game.php?*screen=place&try=confirm"
+            ],
+            "js": ["auto_time_attack.js"]
         }
     ],
     "background": {
