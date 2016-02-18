@@ -8,6 +8,7 @@ var currentAttack;
 var scanIndex = 0;
 var scanRunning = false;
 
+var purgeTabId;
 var purging = false;
 var page = 0;
 var purgeStuck = false;
@@ -53,9 +54,16 @@ chrome.extension.onMessage.addListener(function (message, sender, sendResponse) 
 		sendResponse(stuck);
 	} else if (message.text === 'purge') {
         purging = message.value;
+		if (purging) {
+			purgeTabId = sender.tab.id;
+		} else {
+			purgeTabId = undefined;
+		}
         page = message.nextPage;
     } else if (message.text === 'getPurgeData') {
-        sendResponse({purge: purging, newPage: page});
+		if (sender.tab.id == purgeTabId || purgeTabId == undefined) {
+        	sendResponse({purge: purging, newPage: page});
+		}
     } else if (message.text === 'purgeStuck') {
 		purgeStuck = message.value;
 	} else if (message.text === 'getPurgeStuck') {

@@ -22,12 +22,16 @@ function purge (data) {
 }
 
 function purgeEnded () {
-	var pageNumber = document.querySelector('#content_value > table > tbody > tr > td:nth-child(2) > table > tbody > tr:nth-child(2) > td > strong');
-	if (pageNumber.innerHTML.trim() == '&gt;1&lt;') {
-    	chrome.extension.sendMessage({text: 'getPurgeStuck'}, checkPurgeStuck);
-	} else {
-		chrome.extension.sendMessage({text: 'purgeStuck', value: false}, undefined);
-		window.setTimeout(function () {processDelete(page)}, 2000);
+	try {
+		var pageNumber = document.querySelector('#content_value > table > tbody > tr > td:nth-child(2) > table > tbody > tr:nth-child(2) > td > strong');
+		if (pageNumber.innerHTML.trim() == '&gt;1&lt;' || pageNumber.innerHTML.trim() == '&gt;New reports&lt;') {
+			chrome.extension.sendMessage({text: 'getPurgeStuck'}, checkPurgeStuck);
+		} else {
+			chrome.extension.sendMessage({text: 'purgeStuck', value: false}, undefined);
+			window.setTimeout(function () {processDelete(page)}, 2000);
+		}
+	} catch (e) {
+		chrome.extension.sendMessage({text: 'getPurgeStuck'}, checkPurgeStuck);
 	}
 }
 
@@ -39,6 +43,7 @@ function checkPurgeStuck (stuck) {
 		chrome.extension.sendMessage({text: 'purge', value: false, nextPage: 0}, undefined);
 		chrome.extension.sendMessage({text: 'purgeStuck', value: false}, undefined);
 		cleanEndListeners();
+		location.reload();
 	}
 }
 
@@ -160,16 +165,27 @@ function checkRow (row) {
 function greenRow (row) {
     var img = row.children[1].children[1];
     if (img != undefined) {
-        return (img.src.indexOf('green.png') > -1);
+		try {
+        	return (img.src.indexOf('green.png') > -1);
+		} catch (e) {
+		}
     }
     return false;
 }
 
 function spyExists (row) {
+	return attackTypeExists(row, 'spy');
+}
+
+function attackIcon (row) {
+	return attackTypeExists(row, 'attack');
+}
+
+function attackTypeExists (row, imageName) {
     var iconContainer = row.children[1].children[0].children;
     if (iconContainer != undefined) {
         for (var a = 0; a < iconContainer.length; a++) {
-            if (iconContainer[a].src.indexOf('spy') > -1) {
+            if (iconContainer[a].src.indexOf(imageName) > -1) {
                 return true;
             }
         }
@@ -179,7 +195,7 @@ function spyExists (row) {
 
 function wasAttack (row) {
     var title = row.children[1].children[2].children[0].children[0].children[0].innerHTML;
-    return (title.indexOf('attacks') > -1);
+    return (title.indexOf('attacks') > -1) && attackIcon(row);
 }
 
 function getRow (index) {
