@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "Riders on the Storm",
-    "version": "1.57",
+    "version": "1.63",
     "page_action": {
         "default_icon": "farm_assistent_inactive.png",
         "default_title": "Enable Tribal Wars Farmer"
@@ -36,7 +36,8 @@
         "scripts": ["background.js"]
     },
     "permissions": [
-        "storage"
+        "storage",
+		"alarms"
     ],
     "options_page": "options.html",
     "icons": {

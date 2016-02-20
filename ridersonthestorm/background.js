@@ -15,6 +15,10 @@ var purgeStuck = false;
 
 var stuck = false;
 
+var keepingAlive = false;
+var aliveTabs = [];
+
+
 chrome.extension.onMessage.addListener(function (message, sender, sendResponse) {
     if (message.text === 'alreadyRunning') {
 		console.log(farmTabId, sender.tab.id);
@@ -68,6 +72,23 @@ chrome.extension.onMessage.addListener(function (message, sender, sendResponse) 
 		purgeStuck = message.value;
 	} else if (message.text === 'getPurgeStuck') {
 		sendResponse({purgeStuck: purgeStuck});
+	} else if (message.text === 'stayAlive') {
+		if (!keepingAlive) {
+			chrome.alarms.onAlarm.addListener(function (alarm) {
+				for (var a = 0; a < aliveTabs.length; a++) {
+					chrome.tabs.sendMessage(aliveTabs[a], {text: 'stayAlive'}, undefined);
+				}
+			});
+			chrome.alarms.create("", {periodInMinutes: 0.00166});
+			keepingAlive = true;
+		}
+		aliveTabs.push(sender.tab.id);
+	} else if (message.text === 'unbindStayAlive') {
+		for (var a = 0; a < aliveTabs.length; a++) {
+			if (aliveTabs[a] == sender.tab.id) {
+				aliveTabs.splice(a, 1);
+			}
+		}
 	}
 });
 
@@ -103,3 +124,5 @@ var setActionTitle = function (tabId) {
         chrome.pageAction.setIcon({tabId: tab, path: 'farm_assistent_inactive.png'});
     }
 };
+
+
