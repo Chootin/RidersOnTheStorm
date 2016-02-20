@@ -5,47 +5,38 @@ var timeInput;
 
 var stayAliveText;
 
-window.onload = function () {
-    windowLoaded = true;
-    botCheckCheck();
-
-    var holder = document.querySelector('#inner-border > table > tbody');
-	landingTime = document.querySelector('#date_arrival > span');
-
-
-	var text = document.createElement('span');
-    var tr = document.createElement('tr');
-    var td = document.createElement('td');
-    timeInput = document.createElement('input');
-
-    timeInput.id = 'timeInput';
-    timeInput.type = 'text';
-
-	text.innerHTML = 'Arrival time: ';
-
-    text.style.cssText = 'margin-left: 10px;';
-
-    tr.appendChild(td);
-	td.appendChild(text);
-    td.appendChild(timeInput);
-    
-    holder.appendChild(tr);
+window.addEventListener('load', function {
+	windowLoaded = true;
+	if (document.getElementById('troop-confirm-go') != undefined) {
+		var holder = document.querySelector('#inner-border > table > tbody');
+		landingTime = document.querySelector('#date_arrival > span');
 
 
-	stayAliveText = document.createElement('span');
-	document.getElementsByTagName('body')[0].appendChild(stayAliveText);
-	chrome.runtime.onMessage.addListener(function (message, sender, callback) {
-        if (message.text === 'stayAlive') {
-			stayAliveText.innerHTML = Math.random();
-			stayAliveText.click();
-			console.log(stayAliveText.innerHTML);
-        }
-    });
-	chrome.extension.sendMessage({text: 'stayAlive'}, undefined);
+		var text = document.createElement('span');
+		var tr = document.createElement('tr');
+		var td = document.createElement('td');
+		timeInput = document.createElement('input');
+
+		timeInput.id = 'timeInput';
+		timeInput.type = 'text';
+
+		text.innerHTML = 'Arrival time: ';
+
+		text.style.cssText = 'margin-left: 10px;';
+
+		tr.appendChild(td);
+		td.appendChild(text);
+		td.appendChild(timeInput);
+	
+		holder.appendChild(tr);
 
 
-	timer();
-}
+		stayAliveText = document.createElement('span');
+		document.getElementsByTagName('body')[0].appendChild(stayAliveText);
+
+		timer();
+	}
+});
 
 function getTimeRemaining () {
 	return landingTime.innerHTML.split(' ')[2];
@@ -54,6 +45,9 @@ function getTimeRemaining () {
 function timer () {
 	var remaining = getTimeRemaining();
 	var selectedTimeRemaining = timeInput.value.trim();
+
+	stayAliveText.innerHTML = Math.random();
+	stayAliveText.click();
 
 	console.log(remaining, selectedTimeRemaining);
 

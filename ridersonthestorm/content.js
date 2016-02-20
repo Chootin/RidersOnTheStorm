@@ -453,13 +453,6 @@ function reloadPage () {
     setTimeout(function () {location.reload()}, 1000);
 }
 
-window.setTimeout(function () {
-    if (!windowLoaded) {
-        console.log('Page failed to load after 20 seconds, refreshing.');
-        reloadPage();
-    }
-}, 20000);
-
 function botCheckCheck () {
     var botCheck = document.getElementById('bot_check');
     if (botCheck != undefined) {
@@ -473,7 +466,16 @@ function getRunning () {
     chrome.extension.sendMessage({text: 'alreadyRunning'}, start);
 }
 
-window.onload = function () {
+window.setTimeout(function () {
+    if (!windowLoaded) {
+        console.log('Page failed to load after 20 seconds, refreshing.');
+        reloadPage();
+    }
+}, 20000);
+
+window.addEventListener('load', function {
     windowLoaded = true;
-    botCheckCheck();
-};
+	if (document.getElementById('troop-confirm-go') == undefined) {
+    	botCheckCheck();
+	}
+});
