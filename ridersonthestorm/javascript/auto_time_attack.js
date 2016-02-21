@@ -3,10 +3,7 @@
 var landingTime;
 var timeInput;
 
-var stayAliveText;
-
 window.addEventListener('load', function () {
-	windowLoaded = true;
 	if (document.getElementById('troop_confirm_go') != undefined) {
 		var holder = document.querySelector('#inner-border > table > tbody');
 		landingTime = document.querySelector('#date_arrival > span');
@@ -30,10 +27,6 @@ window.addEventListener('load', function () {
 	
 		holder.appendChild(tr);
 
-
-		stayAliveText = document.createElement('span');
-		document.getElementsByTagName('body')[0].appendChild(stayAliveText);
-
 		timer();
 	}
 });
@@ -45,9 +38,6 @@ function getTimeRemaining () {
 function timer () {
 	var remaining = getTimeRemaining();
 	var selectedTimeRemaining = timeInput.value.trim();
-
-	stayAliveText.innerHTML = Math.random();
-	stayAliveText.click();
 
 	if (selectedTimeRemaining.length == 8 && selectedTimeRemaining.trim() != '' && remaining >= selectedTimeRemaining) {
 		document.getElementById('troop_confirm_go').click();

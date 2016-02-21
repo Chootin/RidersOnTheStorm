@@ -81,10 +81,14 @@ function storeData () {
 }
 
 function beginLoop () {
+	console.log(attacking);
     if (!attacking) {
         farming = true;
+		console.log('asdf');
 		setupEndListeners();
-        loop();
+		console.log('asdf');
+        f_loop();
+		console.log('asdf');
     }
 }
 
@@ -102,7 +106,8 @@ function setupEndListeners () {
     };
 }
 
-var loop = function () {
+function f_loop () {
+	console.log('test', farming);
     if (farming) {
         verifyAndFarm();
     }

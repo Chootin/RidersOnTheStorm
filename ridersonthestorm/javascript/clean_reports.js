@@ -8,7 +8,7 @@ var page;
 
 window.addEventListener('load', function () {
     chrome.extension.sendMessage({text: 'getPurgeData'}, purge);
-}
+});
 
 function purge (data) {
 	var purging = data.purge;

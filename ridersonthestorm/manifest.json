@@ -1,9 +1,9 @@
 {
     "manifest_version": 2,
     "name": "Riders on the Storm",
-    "version": "1.68",
+    "version": "1.72",
     "page_action": {
-        "default_icon": "farm_assistent_inactive.png",
+        "default_icon": "graphics/farm_assistent_inactive.png",
         "default_title": "Enable Tribal Wars Farmer"
     },
     "content_scripts": [
@@ -11,36 +11,35 @@
             "matches": [
                 "https://*.tribalwars.net/game.php?*screen=place*"
             ],
-            "js": ["content.js"]
+            "js": ["javascript/farmer.js", "javascript/stayAlive.js"]
         },
         {
             "matches": [
                 "https://*.tribalwars.net/game.php?*screen=report*"
             ],
-            "js": ["clean_reports.js"]
+            "js": ["javascript/clean_reports.js"]
         },
         {
             "matches": [
                 "https://*.tribalwars.net/game.php?*screen=map*"
             ],
-            "js": ["map.js"]
+            "js": ["javascript/map.js"]
         },
         {
             "matches": [
                 "https://*.tribalwars.net/game.php?*screen=place&try=confirm"
             ],
-            "js": ["auto_time_attack.js"]
+            "js": ["javascript/auto_time_attack.js", "javascript/stayAlive.js"]
         }
     ],
     "background": {
-        "scripts": ["background.js"]
+        "scripts": ["javascript/background.js"]
     },
     "permissions": [
-        "storage",
-		"alarms"
+        "storage"
     ],
-    "options_page": "options.html",
+    "options_page": "html/options.html",
     "icons": {
-        "32": "farm_assistent_active.png"
+        "32": "graphics/farm_assistent_active.png"
     }
 }
