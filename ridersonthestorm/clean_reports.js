@@ -6,7 +6,7 @@ var reportTable;
 
 var page;
 
-window.onload = function () {
+window.addEventListener('load', function () {
     chrome.extension.sendMessage({text: 'getPurgeData'}, purge);
 }
 

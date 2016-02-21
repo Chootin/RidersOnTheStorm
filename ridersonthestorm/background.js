@@ -36,14 +36,16 @@ chrome.extension.onMessage.addListener(function (message, sender, sendResponse) 
         setActionTitle(sender.tab.id);
         sendResponse({});
     } else if (message.text === 'disconnect') {
-        farmTabId = undefined;
-        isAttacking = false;
-        isFarming = false;
-		currentAttack = undefined;
-		scanRunning = false;
-		stuck = false;
-		scanIndex = 0;
-        setActionTitle();
+        if (sender.tab.id == farmTabId) {
+            farmTabId = undefined;
+            isAttacking = false;
+            isFarming = false;
+		    currentAttack = undefined;
+		    scanRunning = false;
+		    stuck = false;
+		    scanIndex = 0;
+            setActionTitle();
+        }
     } else if (message.text === 'scanIndex') {
         sendResponse(scanIndex);
     } else if (message.text === 'incScanIndex') {

@@ -100,12 +100,6 @@ function setupEndListeners () {
             return 'This is your farm tab, are you sure you want to leave?';
         }
     };
-
-    window.onunload = function () {
-        if (isFarmTab) {
-            disconnect();
-        }
-    }
 }
 
 var loop = function () {
@@ -165,6 +159,10 @@ function dataRetrieved () {
             farming = false;
             cleanEndListeners();
             disconnect();
+        } else if (message.text === 'checkActive') {
+            if (farming) {
+                callback();
+            }
         }
     });
 
@@ -473,9 +471,11 @@ window.setTimeout(function () {
     }
 }, 20000);
 
-window.addEventListener('load', function {
+window.onunload = function () {
+    disconnect();
+}
+
+window.addEventListener('load', function () {
     windowLoaded = true;
-	if (document.getElementById('troop-confirm-go') == undefined) {
-    	botCheckCheck();
-	}
+	botCheckCheck();
 });

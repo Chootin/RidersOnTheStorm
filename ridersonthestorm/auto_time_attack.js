@@ -5,9 +5,9 @@ var timeInput;
 
 var stayAliveText;
 
-window.addEventListener('load', function {
+window.addEventListener('load', function () {
 	windowLoaded = true;
-	if (document.getElementById('troop-confirm-go') != undefined) {
+	if (document.getElementById('troop_confirm_go') != undefined) {
 		var holder = document.querySelector('#inner-border > table > tbody');
 		landingTime = document.querySelector('#date_arrival > span');
 
@@ -48,8 +48,6 @@ function timer () {
 
 	stayAliveText.innerHTML = Math.random();
 	stayAliveText.click();
-
-	console.log(remaining, selectedTimeRemaining);
 
 	if (selectedTimeRemaining.length == 8 && selectedTimeRemaining.trim() != '' && remaining >= selectedTimeRemaining) {
 		document.getElementById('troop_confirm_go').click();
