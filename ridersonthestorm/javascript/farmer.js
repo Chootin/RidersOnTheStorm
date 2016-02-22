@@ -28,8 +28,8 @@ function scanVillageOwners (index) { //Types the coord into the box and hits the
     if (index < safeFarm.length) {
         chrome.extension.sendMessage({text: 'runScan'}, undefined);
 
-        var confirmAttackList = document.getElementsByClassName('troop_confirm_go');
-        if (confirmAttackList.length > 0) { //We are already scanning
+        var confirmAttackList = document.getElementById('troop_confirm_go');
+        if (confirmAttackList != undefined) { //We are already scanning
             var tempOwner = '';
 
             var owner = document.querySelector('#command-data-form > table:nth-child(8) > tbody > tr:nth-child(3) > td:nth-child(2) > a');
@@ -81,21 +81,17 @@ function storeData () {
 }
 
 function beginLoop () {
-	console.log(attacking);
     if (!attacking) {
         farming = true;
-		console.log('asdf');
 		setupEndListeners();
-		console.log('asdf');
         f_loop();
-		console.log('asdf');
     }
 }
 
 function cleanEndListeners () {
-    window.onbeforeunload = function () {};
+    window.onbeforeunload = undefined;
 
-    window.onunload = function () {}
+	window.removeEventListener('unload', disconnect);
 }
 
 function setupEndListeners () {
@@ -107,7 +103,6 @@ function setupEndListeners () {
 }
 
 function f_loop () {
-	console.log('test', farming);
     if (farming) {
         verifyAndFarm();
     }
@@ -211,7 +206,7 @@ var verifyAndFarm = function () {
             attacking = true;
         }
 
-        window.setTimeout(loop, 1000);
+        window.setTimeout(f_loop, 1000);
     }
 };
 
@@ -280,7 +275,7 @@ function enterUnits (id, number) {
 
 function clickAttack () {
 	cleanEndListeners();
-    document.getElementById('target_attack').click();
+	document.getElementById('target_attack').click();
 }
 
 function moveToAnotherList (selectedFarm, list) {
@@ -343,6 +338,7 @@ function sendAttack (currentAttack, remainingAttempts) {
             var sendAttackButton = document.getElementById('troop_confirm_go');
             if (sendAttackButton != undefined) {
                 setBackgroundData(false, true, undefined);
+				cleanEndListeners();
                 sendAttackButton.click();
             } else {
                 console.log('Confirm button could not be found.');
@@ -476,11 +472,9 @@ window.setTimeout(function () {
     }
 }, 20000);
 
-window.onunload = function () {
-    disconnect();
-}
-
 window.addEventListener('load', function () {
     windowLoaded = true;
 	botCheckCheck();
 });
+
+window.addEventListener('unload', disconnect);

@@ -10,5 +10,5 @@ window.addEventListener('load', function () {
 function saloop () {
 	stayAliveText.innerHTML = Math.random();
 	stayAliveText.click();
-	window.setTimeout(loop, 1000);
+	window.setTimeout(saloop, 1000);
 }
