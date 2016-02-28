@@ -1,6 +1,7 @@
 "use strict";
 
-var farmTabId;
+//var farmTabId;
+var farmTabs = []; //TODO: working on multiple farm tabs
 var isAttacking = false;
 var isFarming = false;
 var currentAttack;
@@ -16,13 +17,14 @@ var purgeStuck = false;
 var stuck = false;
 
 var keepingAlive = false;
-var aliveTabs = [];
 
 //Farm Listeners
 chrome.extension.onMessage.addListener(function (message, sender, sendResponse) {
     if (message.text === 'alreadyRunning') {
-		console.log(farmTabId, sender.tab.id);
-        var runningOnAnotherTab = (farmTabId != undefined && sender.tab.id != farmTabId);
+        var farmTab = getFarmTab(sender.tab.id);
+
+        var runningOnAnotherTab = farmTab != null;
+        //var runningOnAnotherTab = (farmTabId != undefined && sender.tab.id != farmTabId);
         sendResponse({runningElsewhere: runningOnAnotherTab});
     } else if (message.text === 'getData') {
         sendResponse({attacking: isAttacking, farming: isFarming, village: currentAttack, scanRunning: scanRunning});
@@ -36,16 +38,14 @@ chrome.extension.onMessage.addListener(function (message, sender, sendResponse) 
         setActionTitle(sender.tab.id);
         sendResponse({});
     } else if (message.text === 'disconnect') {
-        if (sender.tab.id == farmTabId) {
-            farmTabId = undefined;
-            isAttacking = false;
-            isFarming = false;
-		    currentAttack = undefined;
-		    scanRunning = false;
-		    stuck = false;
-		    scanIndex = 0;
-            setActionTitle();
-        }
+        var farmTab = getFarmTabObject(sender.tab.id);
+
+        removeFarmTabObject(farmTab);
+		scanIndex = 0;
+	    scanRunning = false;
+
+        setActionTitle(sender.tab.id);
+
     } else if (message.text === 'scanIndex') {
         sendResponse(scanIndex);
     } else if (message.text === 'incScanIndex') {
@@ -83,35 +83,56 @@ chrome.extension.onMessage.addListener(function (message, sender, sendResponse) 
 });
 
 chrome.pageAction.onClicked.addListener(function (tab) {
-    if (isFarming) {
-        if (tab.id === farmTabId) {
-            isFarming = false;
-            farmTabId = undefined;
+    var farmTab = getFarmTabObject(tab.id);
+
+    if (farmTab != null) {
+        if (farmTab.isFarming) {
+            removeFarmTabObject(farmTab);
             chrome.tabs.sendMessage(tab.id, {text: 'stop'}, undefined);
-        } else {
-            chrome.pageAction.hide(tab.id);
         }
     } else {
-        isFarming = true;
-        farmTabId = tab.id;
+        farmTab = addFarmTabObject(tab.id, getVillage());
+        farmTab.isFarming = true;
         chrome.tabs.sendMessage(tab.id, {text: 'start'}, undefined);
     }
-    setActionTitle(tab.id);
+    setActionTitle(tab.id, farmTab.isFarming);
 });
 
-var setActionTitle = function (tabId) {
-    var tab;
-    if (tabId != undefined || farmTabId == undefined) {
-        tab = tabId;
-    } else {
-        tab = farmTabId;
+function getVillage (url) {
+    return url.split('?')[1].split('&')[0].split('=')[1];
+}
+
+function addFarmTabObject (tabId, village) {
+    var newFarmTab = {id: tabId, village: village, isAttacking: false, isFarming: true, stuck: false};
+    farmTabs.push(newFarmTab);
+    return farmTabs;
+}
+
+function removeFarmTabObject (farmTab) {
+    for (var a = 0; a < farmTabs.length; a++) {
+        if (farmTabs[a].id == farmTab.id) {
+            farmTabs.splice(a, 1);
+        }
     }
-    if (isFarming) {
-            chrome.pageAction.setTitle({tabId: tab, title: 'Disable Tribal Wars Farmer'});
-            chrome.pageAction.setIcon({tabId: tab, path: 'graphics/farm_assistent_active.png'});
+}
+
+function getFarmTabObject (tabId) {
+    for (var a = 0; a < farmTabs.length; a++) {
+        if (tabId == farmTabs[a].id) {
+            return farmTabs[a]; 
+        }
+    }
+
+    return null;
+}
+
+var setActionTitle = function (tabId, farming) {
+    if (farming) {
+        chrome.pageAction.setTitle({tabId: tabId, title: 'Disable Tribal Wars Farmer'});
+        chrome.pageAction.setIcon({tabId: tabId, path: 'graphics/farm_assistent_active.png'});
     } else {
-        chrome.pageAction.setTitle({tabId: tab, title: 'Enable Tribal Wars Farmer'});
-        chrome.pageAction.setIcon({tabId: tab, path: 'graphics/farm_assistent_inactive.png'});
+        chrome.pageAction.setTitle({tabId: tabId, title: 'Enable Tribal Wars Farmer'});
+        chrome.pageAction.setIcon({tabId: tabId, path: 'graphics/farm_assistent_inactive.png'});
     }
 };
 
