@@ -45,11 +45,11 @@ function timer () {
     var selectedDate = getSelectedDate();
     var duration = getDurationMilliseconds();
 
-    if (selectedDate != null && selectedDate.getTime() + duration <= serverTime + offset) {
-        document.getElementById('troop_confirm_go');
+    if (selectedDate != null && selectedDate.getTime() - duration - offset - serverTime <= 0) {
+        document.getElementById('troop_confirm_go').click();
     }
 
-	window.setTimeout(timer, 300);
+	window.setTimeout(timer, 16.66);
 }
 
 function getDurationMilliseconds () {
@@ -69,12 +69,13 @@ function getTimeOffset () {
 }
 
 function getSelectedDate () {
-    var selectedValueSplit = timeInput.value.trim();
-    if (selectedValueSplit.length == dateTimeFormat.length) {
-        timeInput.style = 'background-color: green;';
-        return createDateObject(selectedValueSplit[0], selectedValueSplit[1]);
+    var selectedValue = timeInput.value.trim();
+    if (selectedValue.length == dateTimeFormat.length) {
+        var selectedValueSplit = selectedValue.split(' ');
+        timeInput.style.cssText = 'background-color: green;';
+        return createDateObject(selectedValueSplit[1], selectedValueSplit[0]);
     }
-    timeInput.style = 'background-color: red;';
+    timeInput.style.cssText = 'background-color: red;';
     return null;
 }
 
